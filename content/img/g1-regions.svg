@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 290" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif" role="img" aria-labelledby="t">
+<title id="t">G1 的 Region：每块随时可以扮演 Eden、Survivor、Old 或 Humongous</title>
+<style>
+.bg{fill:#ffffff}.ink{fill:#152033}.ink2{fill:#47546c}.ink3{fill:#76829a}
+.r{stroke-width:1.3}
+.E{fill:rgba(43,85,196,.14);stroke:#2b55c4}.S{fill:rgba(13,132,117,.16);stroke:#0d8475}
+.O{fill:rgba(138,90,34,.14);stroke:#8a5a22}.H{fill:rgba(177,58,109,.16);stroke:#b13a6d}
+.F{fill:#f6f8fb;stroke:#d4dae4}
+.g{fill:none;stroke:#c2352c;stroke-width:2.2;stroke-dasharray:5 3}
+.tE{fill:#2b55c4}.tS{fill:#0d8475}.tO{fill:#8a5a22}.tH{fill:#b13a6d}.tg{fill:#c2352c}
+text{font-size:13px}.s{font-size:12px}.c{font-size:12px;font-weight:700}
+@media (prefers-color-scheme: dark){
+.bg{fill:#151c27}.ink{fill:#e4e9f1}.ink2{fill:#a6b1c3}.ink3{fill:#7d899d}
+.E{fill:rgba(134,166,255,.16);stroke:#86a6ff}.S{fill:rgba(79,207,189,.17);stroke:#4fcfbd}
+.O{fill:rgba(217,164,106,.15);stroke:#d9a46a}.H{fill:rgba(240,139,182,.17);stroke:#f08bb6}
+.F{fill:#1a2230;stroke:#2a3443}.g{stroke:#ff7a70}
+.tE{fill:#86a6ff}.tS{fill:#4fcfbd}.tO{fill:#d9a46a}.tH{fill:#f08bb6}.tg{fill:#ff7a70}
+}
+</style>
+<rect class="bg" width="860" height="290" rx="12"/>
+<!-- 10 列 × 4 行，每格 56×44 -->
+<g transform="translate(30,24)">
+<rect class="r E" x="0" y="0" width="52" height="40" rx="5"/><text class="c tE" x="26" y="25" text-anchor="middle">E</text>
+<rect class="r O" x="58" y="0" width="52" height="40" rx="5"/><text class="c tO" x="84" y="25" text-anchor="middle">O</text>
+<rect class="r F" x="116" y="0" width="52" height="40" rx="5"/>
+<rect class="r E" x="174" y="0" width="52" height="40" rx="5"/><text class="c tE" x="200" y="25" text-anchor="middle">E</text>
+<rect class="r H" x="232" y="0" width="110" height="40" rx="5"/><text class="c tH" x="287" y="25" text-anchor="middle">H（大对象占两块）</text>
+<rect class="r O" x="348" y="0" width="52" height="40" rx="5"/><text class="c tO" x="374" y="25" text-anchor="middle">O</text>
+<rect class="r F" x="406" y="0" width="52" height="40" rx="5"/>
+<rect class="r S" x="464" y="0" width="52" height="40" rx="5"/><text class="c tS" x="490" y="25" text-anchor="middle">S</text>
+<rect class="r O" x="0" y="46" width="52" height="40" rx="5"/><text class="c tO" x="26" y="71" text-anchor="middle">O</text>
+<rect class="r F" x="58" y="46" width="52" height="40" rx="5"/>
+<rect class="r E" x="116" y="46" width="52" height="40" rx="5"/><text class="c tE" x="142" y="71" text-anchor="middle">E</text>
+<rect class="r O" x="174" y="46" width="52" height="40" rx="5"/><text class="c tO" x="200" y="71" text-anchor="middle">O</text>
+<rect class="r F" x="232" y="46" width="52" height="40" rx="5"/>
+<rect class="r E" x="290" y="46" width="52" height="40" rx="5"/><text class="c tE" x="316" y="71" text-anchor="middle">E</text>
+<rect class="r O" x="348" y="46" width="52" height="40" rx="5"/><text class="c tO" x="374" y="71" text-anchor="middle">O</text>
+<rect class="r O" x="406" y="46" width="52" height="40" rx="5"/><text class="c tO" x="432" y="71" text-anchor="middle">O</text>
+<rect class="r F" x="464" y="46" width="52" height="40" rx="5"/>
+<rect class="r F" x="0" y="92" width="52" height="40" rx="5"/>
+<rect class="r E" x="58" y="92" width="52" height="40" rx="5"/><text class="c tE" x="84" y="117" text-anchor="middle">E</text>
+<rect class="r O" x="116" y="92" width="52" height="40" rx="5"/><text class="c tO" x="142" y="117" text-anchor="middle">O</text>
+<rect class="r S" x="174" y="92" width="52" height="40" rx="5"/><text class="c tS" x="200" y="117" text-anchor="middle">S</text>
+<rect class="r O" x="232" y="92" width="52" height="40" rx="5"/><text class="c tO" x="258" y="117" text-anchor="middle">O</text>
+<rect class="r F" x="290" y="92" width="52" height="40" rx="5"/>
+<rect class="r E" x="348" y="92" width="52" height="40" rx="5"/><text class="c tE" x="374" y="117" text-anchor="middle">E</text>
+<rect class="r F" x="406" y="92" width="52" height="40" rx="5"/>
+<rect class="r O" x="464" y="92" width="52" height="40" rx="5"/><text class="c tO" x="490" y="117" text-anchor="middle">O</text>
+<!-- 垃圾最多的老年代 Region -->
+<rect class="g" x="171" y="43" width="58" height="46" rx="7"/>
+<rect class="g" x="403" y="43" width="58" height="46" rx="7"/>
+<rect class="g" x="229" y="89" width="58" height="46" rx="7"/>
+</g>
+<g transform="translate(580,30)">
+<rect class="r E" x="0" y="0" width="22" height="18" rx="3"/><text class="ink s" x="32" y="14">Eden</text>
+<rect class="r S" x="0" y="28" width="22" height="18" rx="3"/><text class="ink s" x="32" y="42">Survivor</text>
+<rect class="r O" x="0" y="56" width="22" height="18" rx="3"/><text class="ink s" x="32" y="70">Old</text>
+<rect class="r H" x="0" y="84" width="22" height="18" rx="3"/><text class="ink s" x="32" y="98">Humongous（超过半个 Region 的大对象）</text>
+<rect class="r F" x="0" y="112" width="22" height="18" rx="3"/><text class="ink s" x="32" y="126">空闲</text>
+<rect class="g" x="0" y="140" width="22" height="18" rx="3"/><text class="tg s" x="32" y="154">垃圾最多，下次 Mixed GC 优先回收</text>
+</g>
+<text class="ink2 s" x="30" y="222">堆被切成约 2048 块大小相同的 Region（1MB 到 32MB）。新生代、老年代只是“一组 Region”的名字，</text>
+<text class="ink2 s" x="30" y="244">大小随时调整。Young GC 回收所有 E 和 S；Mixed GC 再加上虚线框里垃圾最多的那几块 O，</text>
+<text class="ink2 s" x="30" y="266">挑多少块由停顿目标 -XX:MaxGCPauseMillis 决定。活对象被复制进空闲 Region，原来的整块清空。</text>
+</svg>
