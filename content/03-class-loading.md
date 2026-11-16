@@ -114,16 +114,7 @@ JVM 保证一个类的 `<clinit>()` 只执行一次。多个线程同时触发�
   T2 用上了 Slow
 ```
 
-静态代码块只执行了一次，T2 一直等到 T1 初始化完才继续。奇怪的是 T2 的状态显示 **RUNNABLE**，而不是 BLOCKED 或 WAITING。用 jstack 看 T2（节选）：
-
-```text
-"T2" #15 prio=5 ... in Object.wait()
-   java.lang.Thread.State: RUNNABLE
-	at ClinitOnce$$Lambda$1/0x0000009801000c10.run(Unknown Source)
-	- waiting on the Class initialization monitor for ClinitOnce$Slow
-```
-
-线上如果有线程卡在“等类初始化”上，监控里看到的是 RUNNABLE，很容易被当成在干活。所以静态代码块里不要做耗时操作，两个类的静态初始化也不要互相依赖（会死锁）。jstack 里的 `waiting on the Class initialization monitor` 就是排查线索。
+静态代码块只执行了一次，T2 一直等到 T1 初始化完才继续。所以静态代码块里不要做耗时操作，两个类的静态初始化也不要互相依赖，否则线程会被卡住，甚至死锁。
 
 这个保证也给了一种不加锁的懒加载单例写法，**静态内部类单例**：
 
@@ -139,6 +130,19 @@ public class Singleton {
 
 外部类加载时 Holder 不会初始化；第一次调用 `getInstance()` 读 `Holder.INSTANCE`，才触发 Holder 初始化、创建实例，而 JVM 保证这一步只发生一次。
 
+### 深入一层（可跳过）：等类初始化的线程在 jstack 里是什么样
+
+上面的输出里，T2 在等待时状态是 **RUNNABLE**，而不是 BLOCKED 或 WAITING。用 jstack 看 T2（节选）：
+
+```text
+"T2" #15 prio=5 ... in Object.wait()
+   java.lang.Thread.State: RUNNABLE
+	at ClinitOnce$$Lambda$1/0x0000009801000c10.run(Unknown Source)
+	- waiting on the Class initialization monitor for ClinitOnce$Slow
+```
+
+线上如果有线程卡在“等类初始化”上，监控里看到的是 RUNNABLE，很容易被当成在干活。`waiting on the Class initialization monitor` 这一行就是排查线索。
+
 ## 3.5 类加载器：三层
 
 “加载”阶段由**类加载器**完成。JDK 9 之后内置三个：
@@ -149,18 +153,15 @@ public class Singleton {
 | 平台类加载器（Platform） | 其余的 JDK 模块，如 `java.sql`。JDK 8 里对应的是扩展类加载器（Extension），加载 `jre/lib/ext` | `PlatformClassLoader` |
 | 应用类加载器（Application） | classpath 上的类，也就是我们自己写的代码和依赖的 jar | `AppClassLoader` |
 
-`examples/LoaderTree.java` 打印了三个类分别由谁加载，以及加载器之间的父子关系，JDK 17 实测：
+`examples/LoaderTree.java` 打印了三个类分别由谁加载，JDK 17 实测（节选）：
 
 ```text
 String           ← null
 java.sql.Driver  ← jdk.internal.loader.ClassLoaders$PlatformClassLoader@7644db57
 LoaderTree       ← jdk.internal.loader.ClassLoaders$AppClassLoader@22d8cfe0
-
-jdk.internal.loader.ClassLoaders$AppClassLoader@22d8cfe0 的 parent 是 jdk.internal.loader.ClassLoaders$PlatformClassLoader@7644db57
-jdk.internal.loader.ClassLoaders$PlatformClassLoader@7644db57 的 parent 是 null
 ```
 
-这里的“父子”不是继承关系，而是每个加载器内部有一个 `parent` 字段，指向它的上级。
+程序接着沿 `getParent()` 往上走：应用类加载器的 parent 是平台类加载器，平台类加载器的 parent 是 null（启动类加载器）。这里的“父子”不是继承关系，而是每个加载器内部有一个 `parent` 字段，指向它的上级。
 
 还有一条后面反复要用的规则：**一个类的身份 = 全限定名 + 加载它的类加载器**。同一份 `.class` 文件，被两个不同的类加载器加载，在 JVM 看来就是两个不同的类。
 
@@ -210,9 +211,7 @@ l1 再 loadClass 一次  : true
 c2.cast(g1)          : Cannot cast Greeter to Greeter
 ```
 
-- l1、l2 的父加载器是应用类加载器，它在 classpath 上找不到 Greeter，于是各自调用 findClass，得到**两个不同的类**，静态代码块也各执行了一次。
-- 类名完全一样，`c1 == c2` 却是 false，类型转换报出了 `Cannot cast Greeter to Greeter` 这种看似荒唐的错误。在 Tomcat 或热部署环境里看到这种报错，就要想到是两个类加载器各加载了一份。
-- l1 再加载一次 Greeter，第一步就查到已经加载过，返回同一个类。
+- l1、l2 的父加载器是应用类加载器，它在 classpath 上找不到 Greeter，于是各自调用 findClass，得到**两个不同的类**。类名完全一样，`c1 == c2` 却是 false，类型转换报出 `Cannot cast Greeter to Greeter`。在 Tomcat 或热部署环境里看到这种报错，就要想到是两个类加载器各加载了一份。
 - 让 l1 加载 String，请求一路交到启动类加载器，返回的是 JDK 的 String（加载器显示为 null）。
 
 ### 深入一层（可跳过）：JDK 9 模块化之后的委派
@@ -243,7 +242,6 @@ JDK 9 引入模块系统后，平台类加载器和应用类加载器的 `loadCl
 - [ ] PreparePuzzle 为什么输出 a = 1, b = 0？把 INSTANCE 那一行挪到最后会怎样？
 - [ ] 通过子类访问父类的静态字段，子类会初始化吗？读一个 `static final String` 字面量常量呢？
 - [ ] `Class.forName` 和 `ClassLoader.loadClass` 有什么区别？
-- [ ] 一个线程卡在等待另一个线程完成类初始化，jstack 里它是什么状态？怎么认出来？
 - [ ] 两个类的全限定名相同，一定是同一个类吗？
 - [ ] 自己写一个 `java.lang.String` 能替换掉 JDK 的吗？为什么？
 - [ ] JDBC 加载驱动为什么要用线程上下文类加载器？
