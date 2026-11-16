@@ -1,0 +1,1094 @@
+<title>JVM 交互学习手册</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<style>
+/* 布局：左侧目录（单元 → 小节），右侧一次显示一个单元。
+   正文是一栏可读宽度；“动手”演示是正文里的卡片：上面旁白和控制，下面左代码、右运行状态。 */
+:root{
+  --bg:#f1f3f7; --surface:#ffffff; --panel:#f6f8fb; --surface-2:#e8ecf2; --ink:#152033; --ink-2:#47546c; --ink-3:#76829a;
+  --line:#d4dae4; --line-2:#b9c3d2;
+  --accent:#2b55c4; --accent-ink:#ffffff; --accent-bg:rgba(43,85,196,.09);
+  --t1:#2b55c4; --t2:#b13a6d; --t3:#0d8475; --t4:#8a5a22; --on-th:#ffffff;
+  --ok:#1b8447; --bad:#c2352c; --wait:#9a650b; --idle:#6f7b91;
+  --ok-bg:rgba(27,132,71,.11); --bad-bg:rgba(194,53,44,.10); --wait-bg:rgba(162,106,12,.13); --idle-bg:rgba(111,123,145,.13);
+  --c-kw:#8b2fa6; --c-str:#b0482a; --c-com:#76829a; --c-num:#0d7f70; --c-ty:#1d5c9c;
+  --code-bg:#f6f8fb;
+  --k-mark:#2b55c4; --k-klass:#0d8475; --k-len:#8a5a22; --k-field:#1b8447; --k-ref:#b13a6d; --k-pad:#9aa5b7;
+  --n-grey:#a3adbd; --n-black:#1d2433; --n-black-ink:#ffffff;
+  --f-display:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1219; --surface:#151c27; --panel:#1a2230; --surface-2:#212b39; --ink:#e4e9f1; --ink-2:#a6b1c3; --ink-3:#7d899d;
+    --line:#2a3443; --line-2:#3d495b;
+    --accent:#86a6ff; --accent-ink:#0d1219; --accent-bg:rgba(134,166,255,.12);
+    --t1:#86a6ff; --t2:#f08bb6; --t3:#4fcfbd; --t4:#d9a46a; --on-th:#0d1219;
+    --ok:#5bc98a; --bad:#ff7a70; --wait:#f0b350; --idle:#8e9ab0;
+    --ok-bg:rgba(91,201,138,.14); --bad-bg:rgba(255,122,112,.13); --wait-bg:rgba(240,179,80,.14); --idle-bg:rgba(142,154,176,.15);
+    --c-kw:#d39bf0; --c-str:#f0a080; --c-com:#7d899d; --c-num:#5fd3c2; --c-ty:#8cbcf0;
+    --code-bg:#121923;
+    --k-mark:#86a6ff; --k-klass:#4fcfbd; --k-len:#d9a46a; --k-field:#5bc98a; --k-ref:#f08bb6; --k-pad:#5a667a;
+    --n-grey:#6b778b; --n-black:#000000; --n-black-ink:#e4e9f1;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1219; --surface:#151c27; --panel:#1a2230; --surface-2:#212b39; --ink:#e4e9f1; --ink-2:#a6b1c3; --ink-3:#7d899d;
+  --line:#2a3443; --line-2:#3d495b;
+  --accent:#86a6ff; --accent-ink:#0d1219; --accent-bg:rgba(134,166,255,.12);
+  --t1:#86a6ff; --t2:#f08bb6; --t3:#4fcfbd; --t4:#d9a46a; --on-th:#0d1219;
+  --ok:#5bc98a; --bad:#ff7a70; --wait:#f0b350; --idle:#8e9ab0;
+  --ok-bg:rgba(91,201,138,.14); --bad-bg:rgba(255,122,112,.13); --wait-bg:rgba(240,179,80,.14); --idle-bg:rgba(142,154,176,.15);
+  --c-kw:#d39bf0; --c-str:#f0a080; --c-com:#7d899d; --c-num:#5fd3c2; --c-ty:#8cbcf0;
+  --code-bg:#121923;
+  --k-mark:#86a6ff; --k-klass:#4fcfbd; --k-len:#d9a46a; --k-field:#5bc98a; --k-ref:#f08bb6; --k-pad:#5a667a;
+  --n-grey:#6b778b; --n-black:#000000; --n-black-ink:#e4e9f1;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.75; margin:0;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:0 64px}
+h1,h2,h3{text-wrap:balance}
+button{font:inherit; color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+code,.mono{font-family:var(--f-mono)}
+
+/* ---------- 骨架 ---------- */
+.app{max-width:1260px; margin:0 auto; display:grid; grid-template-columns:250px minmax(0, 1fr); gap:40px}
+.side{position:sticky; top:env(safe-area-inset-top, 0px); align-self:start; max-height:100vh; overflow:auto; padding-block:28px 24px; font-size:14px}
+.brand{display:block; font-family:var(--f-display); font-weight:900; font-size:19px; color:var(--ink); text-decoration:none; line-height:1.3}
+.toc-btn{display:none}
+.toc{display:grid; gap:2px; margin-top:18px}
+.toc a{text-decoration:none; color:var(--ink-2); border-radius:7px; padding:4px 8px; display:block}
+.toc a:hover{background:var(--surface)}
+.toc .toc-u{font-weight:700; color:var(--ink); display:flex; gap:8px; align-items:baseline}
+.toc .toc-n{font:600 11px var(--f-mono); color:var(--ink-3); flex:none}
+.toc .toc-u.on{background:var(--surface); box-shadow:inset 3px 0 0 var(--accent)}
+.toc-s{list-style:none; margin:2px 0 8px; padding:0 0 0 14px; display:none; font-size:13px; line-height:1.5}
+.toc-unit.open .toc-s{display:grid; gap:1px}
+.toc-s a{padding:3px 8px}
+.toc-s a.on{color:var(--accent); background:var(--accent-bg)}
+.side-foot{margin-top:18px; font-size:12.5px; color:var(--ink-3); display:flex; gap:12px; flex-wrap:wrap; padding:0 8px}
+.side-foot a{color:var(--ink-3)}
+.main{min-width:0; padding-block:36px 0}
+.view{min-width:0}
+@media (max-width: 980px){
+  .app{grid-template-columns:minmax(0, 1fr); gap:0}
+  .side{position:static; max-height:none; padding-block:18px 8px; border-bottom:1px solid var(--line)}
+  .side-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .toc-btn{display:inline-block}
+  .toc{display:none}
+  .side.open .toc{display:grid}
+  .side-foot{display:none}
+  .side.open .side-foot{display:flex}
+  .main{padding-top:20px}
+}
+
+/* ---------- 正文 ---------- */
+.prose{font-size:16px; line-height:1.85}
+.prose > *{max-width:860px}
+.prose p, .prose li{max-width:44em}
+.prose p{margin:12px 0}
+.prose h2{font-family:var(--f-display); font-weight:900; font-size:clamp(21px, 2.6vw, 25px); line-height:1.35; margin:52px 0 14px; padding-top:18px; border-top:1px solid var(--line)}
+.prose section{scroll-margin-top:16px}
+.prose ul,.prose ol{padding-left:1.4em; margin:10px 0}
+.prose li{margin:5px 0}
+.prose li::marker{color:var(--ink-3)}
+.prose strong{font-weight:700; color:var(--ink)}
+.prose :not(pre) > code{font-size:.84em; background:var(--surface-2); padding:1px 5px; border-radius:4px; word-break:break-word}
+.prose blockquote{margin:12px 0; padding:10px 16px; border-left:3px solid var(--line-2); color:var(--ink-2); background:var(--surface); border-radius:0 8px 8px 0}
+pre.codeblock{position:relative; background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:14px 16px; overflow-x:auto; font:13px/1.7 var(--f-mono); margin:14px 0; max-width:860px}
+pre.codeblock code{background:none; padding:0; font-size:inherit; white-space:pre}
+pre.codeblock[data-lang="text"]{color:var(--ink-2)}
+.copy{position:sticky; float:right; left:0; top:0; margin:-6px -8px 0 8px; font:12px var(--f-body); border:1px solid var(--line-2); background:var(--surface); color:var(--ink-3); border-radius:6px; padding:1px 8px; cursor:pointer}
+.copy:hover{color:var(--accent); border-color:var(--accent)}
+.tbl{overflow-x:auto; margin:14px 0; max-width:860px}
+.tbl table{border-collapse:collapse; width:100%; font-size:14.5px; line-height:1.6; background:var(--surface)}
+.tbl th,.tbl td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top}
+.tbl th{background:var(--surface-2); font-weight:700}
+.fig{margin:18px 0; max-width:860px}
+.fig img{display:block; width:100%; height:auto; border:1px solid var(--line); border-radius:12px}
+.c-kw{color:var(--c-kw)} .c-str{color:var(--c-str)} .c-com{color:var(--c-com); font-style:italic} .c-num{color:var(--c-num)} .c-ty{color:var(--c-ty)}
+
+.u-head{display:grid; gap:6px; margin-bottom:8px}
+.u-no{font:600 12px var(--f-mono); color:var(--accent); letter-spacing:.08em}
+.u-head h1{font-family:var(--f-display); font-weight:900; font-size:clamp(30px, 4.4vw, 42px); line-height:1.2; margin:0}
+.u-sub{margin:0; color:var(--ink-2); font-size:17px}
+.core{border-left:3px solid var(--accent); padding:2px 0 2px 14px; font-size:16.5px}
+.goals{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 18px; display:grid; gap:6px; margin:14px 0}
+.g-h{font-weight:700; font-size:14px; color:var(--ink-2)}
+.goals ul{margin:0; padding-left:1.3em} .goals li{margin:3px 0; font-size:15px}
+.hint{color:var(--ink-3); font-size:14px}
+details.qa{border:1px solid var(--line); border-radius:12px; background:var(--surface); margin:10px 0; max-width:860px}
+details.qa summary{cursor:pointer; padding:12px 16px; font-weight:700; list-style:none; display:flex; gap:10px; align-items:baseline}
+details.qa summary::-webkit-details-marker{display:none}
+details.qa summary::before{content:"展开"; flex:none; font:600 11px var(--f-mono); color:var(--accent); background:var(--accent-bg); border-radius:5px; padding:1px 7px}
+details.qa[open] summary::before{content:"收起"}
+details.qa .ans{padding:0 16px 14px; color:var(--ink-2); max-width:none}
+.quizlist{list-style:none; padding:0; counter-reset:q; display:grid; gap:10px; max-width:860px}
+.qz{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 16px; display:grid; gap:8px; counter-increment:q; max-width:none}
+.qz-q{font-weight:700}
+.qz-q::before{content:counter(q) ". "; color:var(--ink-3); font-family:var(--f-mono)}
+.qz-act{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+.qz-ok{font-size:14px; color:var(--ink-2); display:inline-flex; gap:6px; align-items:center; cursor:pointer}
+.qz.done{border-color:var(--ok)}
+.qz-a{color:var(--ink-2); border-top:1px dashed var(--line-2); padding-top:8px}
+.qz-progress{color:var(--ok); font-weight:700}
+details.deep{border:1px dashed var(--line-2); border-radius:12px; background:var(--surface); margin:18px 0; max-width:860px}
+details.deep > summary{cursor:pointer; padding:10px 16px; list-style:none; display:flex; flex-wrap:wrap; gap:6px 10px; align-items:baseline}
+details.deep > summary::-webkit-details-marker{display:none}
+.deep-tag{flex:none; font:600 11px var(--f-mono); color:var(--idle); background:var(--idle-bg); border-radius:5px; padding:1px 7px}
+.deep-t{font-weight:700; color:var(--ink-2)}
+.deep-hint{margin-left:auto; font-size:12.5px; color:var(--ink-3)}
+details.deep[open] > summary{border-bottom:1px dashed var(--line-2)}
+details.deep[open] > summary .deep-hint{display:none}
+.deep-b{padding:6px 16px 14px}
+.deep-b > *{max-width:none}
+.pager{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:56px; padding-top:18px; border-top:1px solid var(--line); max-width:860px}
+.pager a{text-decoration:none; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 14px; display:grid; min-width:0}
+.pager a span{font:600 11px var(--f-mono); color:var(--ink-3)}
+.pager a b{color:var(--ink)}
+.pager a:hover{border-color:var(--accent)}
+
+/* ---------- 首页 ---------- */
+.home-hero{display:grid; gap:12px; max-width:860px; margin-bottom:12px}
+.eyebrow{font:600 12px var(--f-mono); letter-spacing:.08em; color:var(--ink-3)}
+.home-hero h1{font-family:var(--f-display); font-weight:900; font-size:clamp(32px, 5vw, 48px); line-height:1.15; margin:0}
+.lead{margin:0; color:var(--ink-2); font-size:17px}
+.unitmap{list-style:none; margin:18px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:10px}
+.unitmap a{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:grid; gap:3px; align-content:start; font-size:14px; line-height:1.55; text-decoration:none; color:var(--ink); height:100%}
+.unitmap a:hover{border-color:var(--accent)}
+.unitmap .un{font:600 11px var(--f-mono); color:var(--ink-3)}
+.unitmap .nm{font-weight:700; font-size:15px}
+.unitmap .mt{color:var(--ink-2); font-size:13px}
+
+/* ---------- 演示卡片 ---------- */
+.lab{margin:26px 0; border:1px solid var(--line-2); border-radius:14px; background:var(--surface); padding:16px 18px 18px; display:grid; gap:14px; container-type:inline-size; max-width:none; transition:border-color .2s, box-shadow .2s}
+.lab.is-active{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg)}
+.lab > *{min-width:0}
+.lab-top{display:grid; gap:4px}
+.lab-kind{font:600 11.5px var(--f-mono); color:var(--accent); letter-spacing:.06em}
+.lab-title{font-size:18px; margin:0; line-height:1.4}
+.lab-intro{margin:0; color:var(--ink-2); font-size:14.5px; line-height:1.7}
+.narr{display:grid; gap:2px; min-height:96px; background:var(--panel); border-radius:10px; padding:10px 14px}
+.narr-k{font:600 11.5px var(--f-mono); color:var(--ink-3)}
+.narr-t{font-size:16px; font-weight:700; margin:0; line-height:1.5}
+.narr-p{margin:0; color:var(--ink-2); font-size:14.5px; line-height:1.7}
+.narr-p b{color:var(--ink)}
+.narr-p code{font-size:.88em; background:var(--surface-2); padding:0 4px; border-radius:4px}
+.ctrl{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between}
+.btns{display:flex; flex-wrap:wrap; gap:8px}
+.btn{border:1px solid var(--line-2); background:var(--surface); border-radius:8px; padding:5px 12px; cursor:pointer; font-size:14px; white-space:nowrap; line-height:1.6}
+.btn.sm{font-size:13px; padding:2px 10px}
+.btn:hover:not(:disabled){border-color:var(--accent); color:var(--accent)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700}
+.btn.primary:hover:not(:disabled){filter:brightness(1.07); color:var(--accent-ink)}
+.btn.ghost{border-color:transparent; color:var(--ink-3)}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+.seg{display:inline-flex; flex-wrap:wrap; border:1px solid var(--line-2); border-radius:9px; padding:2px; gap:2px; background:var(--surface-2)}
+.seg button{border:0; background:transparent; border-radius:7px; padding:4px 11px; cursor:pointer; font-size:13.5px; color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface); color:var(--ink); font-weight:700; box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.dots{list-style:none; margin:0; padding:0; display:flex; gap:4px; flex-wrap:wrap}
+.dots button{width:24px; height:6px; border-radius:3px; border:0; background:var(--line); cursor:pointer; padding:0}
+.dots button.on{background:var(--accent)} .dots button.past{background:var(--line-2)}
+.bench{display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1.25fr); gap:14px; align-items:start}
+.bench.stack{grid-template-columns:minmax(0, 1fr)}
+@container (max-width: 720px){ .bench{grid-template-columns:minmax(0, 1fr)} }
+@media (max-width: 640px){ .bench{grid-template-columns:minmax(0, 1fr)} }
+.code-col{display:grid; gap:10px; min-width:0}
+.stage{min-width:0}
+.code{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; overflow:hidden}
+.code-h{font:600 11.5px var(--f-mono); color:var(--ink-3); padding:6px 12px; border-bottom:1px solid var(--line); background:var(--surface-2)}
+.code-b{position:relative; max-height:360px; overflow:auto; padding:6px 0; font:12.5px/1.75 var(--f-mono)}
+.ln{display:flex; align-items:center; white-space:pre; min-width:100%; width:max-content; padding-right:10px}
+.ln .no{flex:none; width:2.8em; color:var(--ink-3); text-align:right; padding-right:12px; opacity:.6; user-select:none; font-size:11px}
+.ln .tx{flex:1 0 auto}
+.ln.hl{background:var(--accent-bg); background:color-mix(in srgb, var(--c) 15%, transparent); box-shadow:inset 3px 0 0 var(--c)}
+.ln .who{position:sticky; right:6px; flex:none; font:600 10.5px var(--f-mono); color:var(--on-th); background:var(--c); border-radius:4px; padding:0 5px; margin-left:12px}
+.box{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 12px; min-width:0}
+.box-h{font-size:13px; font-weight:700; color:var(--ink-2); margin-bottom:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.rk{font:600 11.5px var(--f-mono); color:var(--ink-3); letter-spacing:.02em}
+.none{color:var(--ink-3); font-size:13px}
+.note{color:var(--ink-3); font-size:12.5px}
+.th{display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:24px; padding:0 7px; border-radius:6px; background:var(--c); color:var(--on-th); font:600 12px var(--f-mono); vertical-align:middle; white-space:nowrap}
+.pill{display:inline-block; font:600 11px var(--f-mono); padding:1px 8px; border-radius:999px; white-space:nowrap; line-height:1.7}
+.pill.ok{color:var(--ok); background:var(--ok-bg)} .pill.bad{color:var(--bad); background:var(--bad-bg)}
+.pill.wait{color:var(--wait); background:var(--wait-bg)} .pill.idle{color:var(--idle); background:var(--idle-bg)}
+.chip{display:inline-flex; align-items:center; font:600 12px var(--f-mono); border:1px solid var(--line-2); background:var(--surface); border-radius:6px; padding:1px 8px; color:var(--ink-2)}
+.chg{animation:flash 1.3s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 3px var(--accent)} 100%{box-shadow:0 0 0 0 transparent}}
+.grid2{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px}
+.stack-v{display:grid; gap:10px}
+@container (max-width: 520px){ .grid2{grid-template-columns:minmax(0, 1fr)} }
+.verdict{border-radius:10px; padding:10px 14px; font-size:14.5px; line-height:1.7}
+.verdict.bad{background:var(--bad-bg); border:1px solid var(--bad)}
+.verdict.ok{background:var(--ok-bg); border:1px solid var(--ok)}
+.verdict.idle{background:var(--panel); border:1px solid var(--line)}
+.bar{height:7px; border-radius:4px; background:var(--surface-2); overflow:hidden}
+.bar i{display:block; height:100%; background:var(--accent); transition:width .4s}
+.bar.full i{background:var(--bad)}
+
+/* 栈帧：局部变量表 + 操作数栈 */
+.lvt{display:grid; gap:4px; margin-top:4px}
+.slot{display:grid; grid-template-columns:3.4em minmax(0, 1fr) auto; gap:8px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:7px; padding:4px 9px; font-size:13.5px}
+.slot b{font-family:var(--f-mono); font-weight:600}
+.slot .sv{font:700 14px var(--f-mono); color:var(--accent)}
+.slot.hot{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-bg)}
+.ops{display:flex; flex-direction:column-reverse; gap:4px; min-height:96px; margin-top:4px; padding:6px; border:1px dashed var(--line-2); border-radius:8px; justify-content:flex-start}
+.opi{font:700 14px var(--f-mono); text-align:center; background:var(--surface); border:1px solid var(--line-2); border-radius:6px; padding:3px 0}
+.opi.top{border-color:var(--accent); color:var(--accent)}
+.frames{display:flex; flex-direction:column-reverse; gap:5px}
+.frm{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-size:13.5px}
+.frm.top{border-color:var(--accent); box-shadow:inset 3px 0 0 var(--accent)}
+.frm .note{margin-left:auto}
+.cap{display:grid; gap:4px; margin-top:8px}
+
+/* 内存区域 */
+.zgrid{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px}
+@container (max-width: 560px){ .zgrid{grid-template-columns:minmax(0, 1fr)} }
+.zbox{border:1.5px solid var(--zc); border-radius:10px; padding:8px 10px; display:grid; gap:6px; align-content:start; background:color-mix(in srgb, var(--zc) 6%, var(--surface)); min-height:120px}
+.zb-h{font-weight:700; font-size:13.5px; color:var(--zc)}
+.zb-s{font-size:11.5px; color:var(--ink-3); margin-top:-6px}
+.zb-ma{--zc:var(--t2)} .zb-heap{--zc:var(--t1)} .zb-stack{--zc:var(--t3)}
+.it{background:var(--surface); border:1px solid var(--line); border-radius:7px; padding:5px 8px; display:grid; gap:1px; font-size:12.5px; line-height:1.5}
+.it b{font-size:13px}
+.it span{color:var(--ink-2)}
+.it .mono{font-size:12px}
+.it.gone{opacity:.55; border-style:dashed}
+.kv{display:grid; grid-template-columns:auto minmax(0, 1fr); gap:3px 10px; font-size:13px; align-items:baseline}
+.kv .mono{font-size:12.5px}
+.ref{font:600 12px var(--f-mono); color:var(--accent)}
+.tag{font:600 10.5px var(--f-mono); color:var(--accent); border:1px solid var(--accent); border-radius:4px; padding:0 5px; white-space:nowrap}
+
+/* 类加载器阶梯 */
+.ladder{display:grid; gap:6px}
+.lrow{display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:4px 10px; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:7px 11px}
+.lrow b{font-size:14px}
+.lrow .note{grid-column:1 / -1}
+.lrow.on{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-bg)}
+.lrow.hit{border-color:var(--ok); background:var(--ok-bg)}
+.ldown{text-align:center; color:var(--ink-3); font-size:11px; line-height:1}
+
+/* 内存条：TLAB、回收算法 */
+.mem{display:grid; grid-template-columns:repeat(var(--n), minmax(0, 1fr)); gap:3px}
+.mc{min-height:34px; border-radius:5px; border:1px solid var(--line); background:var(--surface); display:flex; align-items:center; justify-content:center; font:600 12px var(--f-mono); color:var(--ink-2); min-width:0; overflow:hidden}
+.mc.free{background:repeating-linear-gradient(135deg, transparent 0 5px, var(--surface-2) 5px 7px)}
+.mc.obj{background:color-mix(in srgb, var(--c, var(--t1)) 18%, var(--surface)); border-color:var(--c, var(--t1)); color:var(--ink)}
+.mc.live{background:var(--ok-bg); border-color:var(--ok); color:var(--ink)}
+.mc.dead{background:var(--bad-bg); border-color:var(--bad); color:var(--bad); text-decoration:line-through}
+.mc.newx{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.mc.off{opacity:.35}
+.mc.tl{box-shadow:inset 0 -3px 0 var(--c)}
+.ptrs{display:grid; grid-template-columns:repeat(var(--n), minmax(0, 1fr)); gap:3px; font:600 10.5px var(--f-mono); min-height:16px}
+.ptrs span{text-align:center; color:var(--c, var(--accent)); white-space:nowrap; overflow:visible}
+.memlbl{display:flex; justify-content:space-between; font:11px var(--f-mono); color:var(--ink-3)}
+.cnt{display:flex; gap:14px; flex-wrap:wrap; font-size:13.5px}
+.cnt b{font:700 18px var(--f-mono); color:var(--accent)}
+
+/* 对象布局 */
+.bytemap{display:grid; gap:4px}
+.brow{display:grid; grid-template-columns:3.2em minmax(0, 1fr); gap:6px; align-items:stretch}
+.boff{font:600 11px var(--f-mono); color:var(--ink-3); align-self:center; text-align:right}
+.bcells{display:grid; grid-template-columns:repeat(8, minmax(0, 1fr)); gap:3px}
+.bpart{border-radius:6px; padding:5px 6px; font-size:12px; line-height:1.35; color:var(--ink); border:1.5px solid var(--kc); background:color-mix(in srgb, var(--kc) 16%, transparent); min-width:0; overflow:hidden}
+.bpart b{display:block; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.bpart span{font:11px var(--f-mono); color:var(--ink-3)}
+.bpart.pad{border-style:dashed; background:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--kc) 22%, transparent) 5px 7px)}
+.total{display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; margin-top:8px}
+.total b{font:700 22px var(--f-mono); color:var(--accent)}
+
+/* 引用图 */
+.gsvg{width:100%; height:auto; display:block}
+.gn rect{fill:var(--surface); stroke:var(--line-2); stroke-width:1.4}
+.gn text{fill:var(--ink); font:600 13px var(--f-mono)}
+.gn.root rect{stroke:var(--accent); stroke-width:2; fill:var(--accent-bg)}
+.gn.live rect{fill:var(--ok-bg); stroke:var(--ok); stroke-width:2}
+.gn.dead rect{fill:var(--bad-bg); stroke:var(--bad); stroke-dasharray:5 4; stroke-width:2}
+.gn.dead text{fill:var(--bad)}
+.gn.w rect{fill:var(--surface); stroke:var(--line-2); stroke-width:1.6}
+.gn.g rect{fill:var(--n-grey); stroke:var(--n-grey)}
+.gn.b rect{fill:var(--n-black); stroke:var(--ink-3)}
+.gn.b text{fill:var(--n-black-ink)}
+.gn.rec rect{stroke:var(--wait); stroke-width:2.5}
+.ge{fill:none; stroke:var(--ink-3); stroke-width:1.6}
+.ge.new{stroke:var(--accent); stroke-width:2.6}
+.ge.del{stroke:var(--bad); stroke-dasharray:5 4; opacity:.7}
+.ge.off{stroke:var(--line-2); stroke-dasharray:3 4; opacity:.6}
+.gah{fill:var(--ink-3)} .gah-new{fill:var(--accent)} .gah-del{fill:var(--bad)} .gah-off{fill:var(--line-2)}
+.glbl{fill:var(--ink-3); font:11.5px var(--f-body)}
+.legend{display:flex; gap:12px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2)}
+.legend i{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; border:1px solid var(--line-2)}
+
+/* 分代 */
+.gens{display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.6fr); gap:6px}
+@container (max-width: 560px){ .gens{grid-template-columns:repeat(2, minmax(0, 1fr))} }
+.gz{border:1.5px solid var(--zc); border-radius:9px; padding:6px 7px; display:grid; gap:5px; align-content:start; background:color-mix(in srgb, var(--zc) 6%, var(--surface)); min-height:118px}
+.gz-h{display:flex; justify-content:space-between; gap:4px; font:700 12px var(--f-mono); color:var(--zc); flex-wrap:wrap}
+.gz-h span{font-weight:600; color:var(--ink-3)}
+.gz-eden{--zc:var(--t1)} .gz-s{--zc:var(--t3)} .gz-old{--zc:var(--t4)}
+.gz.full{box-shadow:0 0 0 2px var(--bad-bg)}
+.gobjs{display:flex; flex-wrap:wrap; gap:4px}
+.gob{font:600 12px var(--f-mono); border:1px solid var(--line-2); background:var(--surface); border-radius:6px; padding:1px 6px; white-space:nowrap}
+.gob sup{font-size:10px; color:var(--accent); margin-left:2px}
+.gob.live{border-color:var(--ok); background:var(--ok-bg)}
+.gob.dead{border-color:var(--bad); color:var(--bad); text-decoration:line-through; opacity:.75}
+.gob.big{border-color:var(--t2); color:var(--t2)}
+
+/* G1 Region */
+.rg{display:grid; grid-template-columns:repeat(8, minmax(0, 1fr)); gap:4px}
+.rc{min-height:42px; border-radius:6px; border:1.5px solid var(--rc, var(--line)); background:color-mix(in srgb, var(--rc, var(--line)) 14%, var(--surface)); display:grid; place-items:center; font:700 12px var(--f-mono); color:var(--rc, var(--ink-3)); position:relative; line-height:1.15; text-align:center}
+.rc small{display:block; font-size:10px; font-weight:600; color:var(--ink-2)}
+.rc.E{--rc:var(--t1)} .rc.S{--rc:var(--t3)} .rc.O{--rc:var(--t4)} .rc.H{--rc:var(--t2)}
+.rc.F{background:var(--surface); border-color:var(--line); color:var(--ink-3)}
+.rc.sel{outline:2.5px dashed var(--bad); outline-offset:1px}
+
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important; scroll-behavior:auto !important} }
+</style>
+
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top">
+      <a class="brand" href="#home">JVM 交互学习手册</a>
+      <button type="button" class="btn sm toc-btn" id="toc-btn" aria-expanded="false" aria-controls="toc">目录</button>
+    </div>
+    <nav class="toc" id="toc" aria-label="目录"></nav>
+    <div class="side-foot">
+      <a href="https://github.com/erha1499/learn-jvm/tree/main/content" target="_blank" rel="noopener" title="完整文字版（GitHub）">文字版</a>
+      <a href="https://github.com/erha1499/learn-jvm/tree/main/examples" target="_blank" rel="noopener" title="文中所有可运行的示例代码">示例代码</a>
+      <a href="https://github.com/erha1499/learn-juc" target="_blank" rel="noopener" title="姊妹篇：Java 并发">learn-juc</a>
+    </div>
+  </aside>
+  <main class="main" id="main">
+<!--VIEWS-->
+  </main>
+</div>
+
+<script>
+(() => {
+'use strict';
+const TOC = /*TOC_JSON*/null;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const RM = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const KW = new Set('public private protected static final void int long boolean byte char short double float new synchronized while if else return for try catch true false null volatile this class extends throw'.split(' '));
+function hiJava(src) {
+  const re = /(\/\/.*$)|("(?:[^"\\]|\\.)*")|\b([A-Za-z_][A-Za-z0-9_]*)\b|\b(\d+)\b/g;
+  let out = '', last = 0, m;
+  while ((m = re.exec(src))) {
+    out += esc(src.slice(last, m.index));
+    if (m[1]) out += '<span class="c-com">' + esc(m[1]) + '</span>';
+    else if (m[2]) out += '<span class="c-str">' + esc(m[2]) + '</span>';
+    else if (m[3]) out += KW.has(m[3]) ? '<span class="c-kw">' + m[3] + '</span>' : (/^[A-Z]/.test(m[3]) ? '<span class="c-ty">' + m[3] + '</span>' : m[3]);
+    else if (m[4]) out += '<span class="c-num">' + m[4] + '</span>';
+    last = re.lastIndex;
+  }
+  return out + esc(src.slice(last));
+}
+const TCOL = {T1: 't1', T2: 't2', GC: 't4', '业务': 't2'};
+const isChg = (st, k) => !!(st && st.chg && st.chg.includes(k));
+const chg = (st, k) => (isChg(st, k) ? ' chg' : '');
+
+function flip(container, update) {
+  const before = {};
+  if (!RM) $$('[data-flip]', container).forEach(el => { before[el.dataset.flip] = el.getBoundingClientRect(); });
+  update();
+  if (RM || !container.offsetParent) return;
+  $$('[data-flip]', container).forEach(el => {
+    if (!el.animate) return;
+    const b = before[el.dataset.flip], a = el.getBoundingClientRect();
+    if (!b) { el.animate([{opacity: 0, transform: 'scale(.85)'}, {opacity: 1, transform: 'none'}], {duration: 300, easing: 'ease-out'}); return; }
+    const dx = b.left - a.left, dy = b.top - a.top;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) el.animate([{transform: 'translate(' + dx + 'px,' + dy + 'px)'}, {transform: 'none'}], {duration: 520, easing: 'cubic-bezier(.2,.75,.2,1)'});
+  });
+}
+function codePanel(p, hl) {
+  const marks = {};
+  (hl || []).forEach(h => {
+    if (h.p !== p.id) return;
+    let idx = h.i;
+    if (idx == null) {
+      idx = p.lines.findIndex(L => L.includes(h.f));
+      if (idx < 0 && window.console) console.warn('高亮行没找到：', h.f);
+    }
+    if (idx >= 0) marks[idx] = h;
+  });
+  const body = p.lines.map((L, i) => {
+    const m = marks[i], col = m ? (TCOL[m.t] || 't1') : '';
+    return '<div class="ln' + (m ? ' hl' : '') + '"' + (m ? ' style="--c:var(--' + col + ')"' : '') + '><span class="no">' + (p.nums ? esc(p.nums[i]) : i + 1) + '</span><span class="tx">' + ((p.plain ? esc(L) : hiJava(L)) || ' ') + '</span>' + (m && m.t ? '<span class="who">' + esc(m.t) + '</span>' : '') + '</div>';
+  }).join('');
+  return '<div class="code"><div class="code-h">' + esc(p.title) + '</div><div class="code-b">' + body + '</div></div>';
+}
+function scrollHl(col) {
+  $$('.code-b', col).forEach(b => {
+    const el = $('.hl', b);
+    if (!el) return;
+    const top = el.offsetTop;
+    if (top < b.scrollTop + 8 || top > b.scrollTop + b.clientHeight - 40) b.scrollTop = Math.max(0, top - b.clientHeight / 3);
+  });
+}
+
+/* ===================== 键盘 / 活动演示 ===================== */
+let ACTIVE = null;
+const STOPPERS = [];
+function setActive(l) { if (ACTIVE === l) return; if (ACTIVE) ACTIVE.classList.remove('is-active'); ACTIVE = l; l.classList.add('is-active'); }
+document.addEventListener('pointerdown', e => { const l = e.target.closest('.lab'); if (l) setActive(l); }, true);
+document.addEventListener('focusin', e => { const l = e.target.closest('.lab'); if (l) setActive(l); });
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey || !ACTIVE || !ACTIVE.offsetParent || !ACTIVE._key) return;
+  const tg = e.target, tag = tg && tg.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.key === ' ' && tag === 'BUTTON') return;
+  if (ACTIVE._key(e)) e.preventDefault();
+});
+
+/* ===================== 逐步演示引擎 ===================== */
+function labTop(cfg) {
+  return '<div class="lab-top"><span class="lab-kind">动手</span><h3 class="lab-title">' + cfg.title + '</h3>' + (cfg.intro ? '<p class="lab-intro">' + cfg.intro + '</p>' : '') + '</div>';
+}
+function segHtml(cfg) {
+  return cfg.variants ? '<div class="seg" role="group" aria-label="' + cfg.variantLabel + '">' + cfg.variants.map(v => '<button type="button" data-v="' + v.key + '">' + v.label + '</button>').join('') + '</div>' : '<span></span>';
+}
+function stepLab(root, cfg) {
+  root.classList.add('lab');
+  root.innerHTML = labTop(cfg) +
+    '<div class="narr" aria-live="polite"><div class="narr-k"></div><p class="narr-t"></p><p class="narr-p"></p></div>' +
+    '<div class="ctrl">' + segHtml(cfg) + '<div class="btns"><button type="button" class="btn b-prev" title="上一步（←）">← 上一步</button><button type="button" class="btn b-play" title="自动播放（空格）">▶ 播放</button><button type="button" class="btn primary b-next" title="下一步（→）">下一步 →</button><button type="button" class="btn ghost b-reset" title="回到第一步">重来</button></div></div>' +
+    '<ol class="dots"></ol>' +
+    '<div class="bench' + (cfg.code ? '' : ' stack') + '">' + (cfg.code ? '<div class="code-col"></div>' : '') + '<div class="stage"></div></div>';
+  const q = s => $(s, root);
+  const codeCol = q('.code-col'), stage = q('.stage'), K = q('.narr-k'), T = q('.narr-t'), P = q('.narr-p'), dots = q('.dots');
+  const bPrev = q('.b-prev'), bNext = q('.b-next'), bPlay = q('.b-play');
+  const S = {v: cfg.variants ? cfg.variants[0].key : null, i: 0, timer: null};
+  let steps = cfg.steps(S.v);
+  function render() {
+    const st = steps[S.i];
+    if (codeCol) { codeCol.innerHTML = cfg.code(S.v).map(p => codePanel(p, st.hl)).join(''); scrollHl(codeCol); }
+    flip(stage, () => { stage.innerHTML = cfg.stage(st.s, st, S.v); });
+    K.textContent = (S.i + 1) + ' / ' + steps.length;
+    T.textContent = st.t;
+    P.innerHTML = st.d;
+    dots.innerHTML = steps.map((s, i) => '<li><button type="button" data-i="' + i + '" class="' + (i === S.i ? 'on' : i < S.i ? 'past' : '') + '" aria-label="第 ' + (i + 1) + ' 步：' + esc(s.t) + '"' + (i === S.i ? ' aria-current="step"' : '') + '></button></li>').join('');
+    bPrev.disabled = S.i === 0;
+    bNext.disabled = S.i === steps.length - 1;
+    bPlay.textContent = S.timer ? '⏸ 暂停' : (S.i === steps.length - 1 ? '↻ 重播' : '▶ 播放');
+    $$('.seg button', root).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === S.v ? 'true' : 'false'));
+  }
+  const go = i => { S.i = Math.max(0, Math.min(steps.length - 1, i)); render(); };
+  const stop = () => { if (S.timer) { clearInterval(S.timer); S.timer = null; } };
+  function play() {
+    if (S.timer) { stop(); render(); return; }
+    if (S.i === steps.length - 1) S.i = 0;
+    S.timer = setInterval(() => { if (S.i >= steps.length - 1) { stop(); render(); return; } go(S.i + 1); }, 3400);
+    render();
+  }
+  bPrev.onclick = () => { stop(); go(S.i - 1); };
+  bNext.onclick = () => { stop(); go(S.i + 1); };
+  bPlay.onclick = play;
+  q('.b-reset').onclick = () => { stop(); go(0); };
+  dots.onclick = e => { const b = e.target.closest('button'); if (b) { stop(); go(+b.dataset.i); } };
+  $$('.seg button', root).forEach(b => { b.onclick = () => { stop(); S.v = b.dataset.v; steps = cfg.steps(S.v); S.i = 0; render(); }; });
+  root._key = e => {
+    if (e.key === 'ArrowRight') { stop(); go(S.i + 1); return true; }
+    if (e.key === 'ArrowLeft') { stop(); go(S.i - 1); return true; }
+    if (e.key === ' ') { play(); return true; }
+    return false;
+  };
+  STOPPERS.push(() => { if (S.timer) { stop(); render(); } });
+  render();
+}
+
+/* ===================== 1.3 栈帧：add(3, 4) ===================== */
+function frameStage(s) {
+  if (s.popped) return '<div class="stack-v"><div class="box"><div class="box-h">' + esc(s.name) + ' 的栈帧</div><p class="none">已弹出，局部变量表和操作数栈随之消失。</p></div><div class="verdict ok">返回值 <b class="mono">' + s.ret + '</b> 交给调用方</div></div>';
+  const slots = s.locals.map((l, i) => '<div class="slot' + (s.hot === i ? ' hot' : '') + '"><span class="rk">' + i + ' 号</span><b>' + esc(l.n) + '</b><span class="sv">' + (l.v == null ? '—' : esc(l.v)) + '</span></div>').join('');
+  const ops = s.stack.length ? s.stack.map((v, i) => '<div class="opi' + (i === s.stack.length - 1 ? ' top' : '') + '" data-flip="op' + i + '-' + v + '">' + esc(v) + '</div>').join('') : '<span class="none" style="text-align:center">空</span>';
+  return '<div class="stack-v"><div class="box"><div class="box-h">' + esc(s.name) + ' 的栈帧<span class="chip">pc = ' + s.pc + '</span></div><div class="grid2"><div><div class="rk">局部变量表 · 抽屉</div><div class="lvt">' + slots + '</div></div><div><div class="rk">操作数栈 · 托盘（上面是栈顶）</div><div class="ops">' + ops + '</div></div></div></div>' +
+    (s.note ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.note + '</div>' : '') + '</div>';
+}
+const ADD_CODE = [
+  {id: 'src', title: 'Calc.java', lines: ['static int add(int a, int b) {', '    int c = a + b;', '    return c * 2;', '}']},
+  {id: 'bc', title: 'javap -c Calc（add 方法）', plain: true, nums: ['0', '1', '2', '3', '4', '5', '6', '7'], lines: ['iload_0', 'iload_1', 'iadd', 'istore_2', 'iload_2', 'iconst_2', 'imul', 'ireturn']}
+];
+function addSteps() {
+  const F = (pc, c, stack, hot) => ({name: 'add(3, 4)', pc, locals: [{n: 'a', v: 3}, {n: 'b', v: 4}, {n: 'c', v: c}], stack, hot});
+  const H = (b, s) => [{p: 'bc', i: b}, {p: 'src', i: s}];
+  return [
+    {t: '调用 add(3, 4)：压入一个新栈帧', d: '参数 3、4 放进 0 号、1 号抽屉。javap 里写着 <b>locals=3</b>，c 的 2 号抽屉也已经留好，只是还没有值。托盘是空的。', hl: [{p: 'src', i: 0}], s: F('—', null, [], null)},
+    {t: 'iload_0：把 a 放上托盘', d: '从 0 号抽屉取出 3，压到操作数栈顶。抽屉里的 a 还在，load 只是复制一份。', hl: H(0, 1), s: F(0, null, [3], 0)},
+    {t: 'iload_1：把 b 放上托盘', d: '4 压在 3 上面，成为新的栈顶。托盘上同时有两个数，这是本方法操作数栈最深的时候，对应 javap 里的 <b>stack=2</b>。', hl: H(1, 1), s: F(1, null, [3, 4], 1)},
+    {t: 'iadd：弹出两个数，相加后放回', d: '取走栈顶的 4 和下面的 3，算出 7 压回去。', hl: H(2, 1), s: F(2, null, [7], null)},
+    {t: 'istore_2：把 7 收进 2 号抽屉', d: '栈顶的 7 弹出，存进 c。<code>int c = a + b;</code> 这一行到此执行完。', hl: H(3, 1), s: F(3, 7, [], 2)},
+    {t: 'iload_2：把 c 放上托盘', d: '开始算 <code>c * 2</code>，先取出 c。', hl: H(4, 2), s: F(4, 7, [7], 2)},
+    {t: 'iconst_2：把常量 2 放上托盘', d: '小常量由指令直接压栈，不用抽屉，也不用查常量池。', hl: H(5, 2), s: F(5, 7, [7, 2], null)},
+    {t: 'imul：弹出两个数，相乘后放回', d: '7 × 2 = 14。', hl: H(6, 2), s: F(6, 7, [14], null)},
+    {t: 'ireturn：返回 14，栈帧弹出', d: '栈顶的 14 交给调用方，压到 main 栈帧的托盘上；add 的栈帧整个弹出，a、b、c 都随之消失。', hl: H(7, 2), s: {name: 'add(3, 4)', popped: true, ret: 14}}
+  ];
+}
+
+/* ===================== 1.3 i = i++ ===================== */
+const IPP_CODE = {
+  post: [{id: 'src', title: 'IPlusPlus.java', lines: ['int i = 0;', 'i = i++;']}, {id: 'bc', title: 'javap -c（节选）', plain: true, nums: ['0', '1', '2', '3', '6'], lines: ['iconst_0', 'istore_1', 'iload_1', 'iinc   1, 1', 'istore_1']}],
+  pre: [{id: 'src', title: 'IPlusPlus.java', lines: ['int j = 0;', 'j = ++j;']}, {id: 'bc', title: 'javap -c（节选）', plain: true, nums: ['19', '20', '21', '24', '25'], lines: ['iconst_0', 'istore_2', 'iinc   2, 1', 'iload_2', 'istore_2']}]
+};
+function ippSteps(v) {
+  const H = (b, s) => [{p: 'bc', i: b}, {p: 'src', i: s}];
+  if (v === 'post') {
+    const F = (pc, i, stack, hot, x) => Object.assign({name: 'main', pc, locals: [{n: 'args', v: 'String[]'}, {n: 'i', v: i}], stack, hot}, x || {});
+    return [
+      {t: 'iconst_0：把 0 放上托盘', d: '执行 <code>int i = 0</code> 的前半步。0 号抽屉是 main 的参数 args。', hl: H(0, 0), s: F(0, null, [0], null)},
+      {t: 'istore_1：0 收进 1 号抽屉', d: 'i = 0。', hl: H(1, 0), s: F(1, 0, [], 1)},
+      {t: 'iload_1：先把 i 的旧值放上托盘', d: '后置 ++ 要“先取值”：把 i 当前的值 <b>0</b> 复制到托盘上。', hl: H(2, 1), s: F(2, 0, [0], 1)},
+      {t: 'iinc 1, 1：直接把抽屉里的 i 加 1', d: 'iinc 不经过托盘，直接改 1 号抽屉，i 变成 <b>1</b>。托盘上放的还是旧值 0。', hl: H(3, 1), s: F(3, 1, [0], 1)},
+      {t: 'istore_1：托盘上的 0 写回 i', d: '赋值号左边的 i 要接收右边表达式的值，那个值就是托盘上的 0。刚加好的 1 被覆盖了。', hl: H(4, 1), s: F(6, 0, [], 1, {note: '最终 i = 0：加 1 的结果被旧值覆盖。', bad: true})}
+    ];
+  }
+  const F = (pc, j, stack, hot, x) => Object.assign({name: 'main', pc, locals: [{n: 'args', v: 'String[]'}, {n: 'i', v: 0}, {n: 'j', v: j}], stack, hot}, x || {});
+  return [
+    {t: 'iconst_0：把 0 放上托盘', d: '执行 <code>int j = 0</code> 的前半步。', hl: H(0, 0), s: F(19, null, [0], null)},
+    {t: 'istore_2：0 收进 2 号抽屉', d: 'j = 0。1 号抽屉是前面的 i。', hl: H(1, 0), s: F(20, 0, [], 2)},
+    {t: 'iinc 2, 1：先把抽屉里的 j 加 1', d: '前置 ++ 先自增，j 变成 1。', hl: H(2, 1), s: F(21, 1, [], 2)},
+    {t: 'iload_2：再把 j 放上托盘', d: '取到的是自增之后的值 1。', hl: H(3, 1), s: F(24, 1, [1], 2)},
+    {t: 'istore_2：1 写回 j', d: '写回的也是 1。两种写法的区别只在 iinc 和 iload 的先后。', hl: H(4, 1), s: F(25, 1, [], 2, {note: '最终 j = 1。'})}
+  ];
+}
+
+/* ===================== 1.4 调用栈与 StackOverflowError ===================== */
+const CS_CAP = 6;
+const CS_CODE = {
+  ok: [{id: 'f', title: '递归求阶乘', lines: ['static int fact(int n) {', '    if (n <= 1) return 1;', '    return n * fact(n - 1);', '}', '', '// main 里：int r = fact(3);']}],
+  bad: [{id: 'f', title: '忘了写结束条件', lines: ['static int fact(int n) {', '    // 少了：if (n <= 1) return 1;', '    return n * fact(n - 1);', '}', '', '// main 里：int r = fact(3);']}]
+};
+function csStage(s) {
+  const n = s.frames.length;
+  const frames = s.frames.map((f, i) => '<div class="frm' + (i === n - 1 ? ' top' : '') + '" data-flip="fr' + i + '"><b class="mono">' + esc(f.m) + '</b><span class="mono">' + esc(f.v) + '</span>' + (f.w ? '<span class="note">' + f.w + '</span>' : '') + '</div>').join('');
+  return '<div class="stack-v"><div class="box"><div class="box-h">main 线程的虚拟机栈（上面是栈顶）</div><div class="frames">' + frames + '</div>' +
+    '<div class="cap"><div class="bar' + (n >= CS_CAP ? ' full' : '') + '"><i style="width:' + Math.min(100, n / CS_CAP * 100) + '%"></i></div><span class="note">' + n + ' / ' + CS_CAP + ' 个栈帧（示意，栈有多大由 -Xss 决定）</span></div></div>' +
+    (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function csSteps(v) {
+  const M = {m: 'main', v: 'r = ?', w: '等 fact(3) 的结果'};
+  const fr = (n, w) => ({m: 'fact', v: 'n = ' + n, w});
+  if (v === 'ok') return [
+    {t: 'main 在栈底', d: '线程启动时，main 的栈帧最先压入，位于栈底。', hl: [{p: 'f', i: 5}], s: {frames: [{m: 'main', v: 'r = ?'}]}},
+    {t: '调用 fact(3)：压入新栈帧', d: '每次调用都压一个新栈帧，有自己的一套局部变量。这一层的 n 是 3。', hl: [{p: 'f', i: 2}], s: {frames: [M, fr(3)]}},
+    {t: '调用 fact(2)：再压一层', d: '两层栈帧里都有叫 n 的变量，但各在各的抽屉里，互不干扰。', hl: [{p: 'f', i: 2}], s: {frames: [M, fr(3, '等 fact(2)'), fr(2)]}},
+    {t: '调用 fact(1)：碰到结束条件', d: 'n <= 1，直接 return 1，不再往下调用。栈最高就到这里。', hl: [{p: 'f', i: 1}], s: {frames: [M, fr(3, '等 fact(2)'), fr(2, '等 fact(1)'), fr(1, 'return 1')]}},
+    {t: 'fact(1) 返回，栈帧弹出', d: '返回值 1 交给 fact(2)，fact(2) 算出 2 × 1 = 2。', hl: [{p: 'f', i: 2}], s: {frames: [M, fr(3, '等 fact(2)'), fr(2, 'return 2 × 1')]}},
+    {t: 'fact(2) 返回', d: 'fact(3) 拿到 2，算出 3 × 2 = 6。', hl: [{p: 'f', i: 2}], s: {frames: [M, fr(3, 'return 3 × 2')]}},
+    {t: 'fact(3) 返回，回到 main', d: '栈又只剩 main。栈帧“调用时压入、返回时弹出”，用完立刻释放，不需要 GC。', hl: [{p: 'f', i: 5}], s: {frames: [{m: 'main', v: 'r = 6'}], out: 'r = 6。整个过程最多同时有 4 个栈帧。'}}
+  ];
+  const deep = k => [M].concat([3, 2, 1, 0, -1].slice(0, k).map((n, i, a) => fr(n, i < a.length - 1 ? '等 fact(' + (n - 1) + ')' : '')));
+  return [
+    {t: 'main 在栈底', d: '同样从 main 开始。', hl: [{p: 'f', i: 5}], s: {frames: [{m: 'main', v: 'r = ?'}]}},
+    {t: '调用 fact(3)、fact(2)', d: '和前面一样一层层往上压。', hl: [{p: 'f', i: 2}], s: {frames: deep(2)}},
+    {t: 'fact(1) 也没有停', d: '没有结束条件，fact(1) 继续调用 fact(0)。', hl: [{p: 'f', i: 2}], s: {frames: deep(4)}},
+    {t: 'fact(0)、fact(-1)……停不下来', d: 'n 变成负数也照样往下调，栈帧越叠越高。', hl: [{p: 'f', i: 2}], s: {frames: deep(5)}},
+    {t: '栈满了：StackOverflowError', d: '要压下一个栈帧时空间不够，JVM 抛出 StackOverflowError。真实的栈能放几千到几万层（见下面的实测），但只要没有出口，迟早会满。', hl: [{p: 'f', i: 2}], s: {frames: deep(5), out: 'Exception in thread "main" java.lang.StackOverflowError', bad: true}}
+  ];
+}
+
+/* ===================== 2.1 东西放在哪 ===================== */
+const AR_CODE = [{id: 'shop', title: 'Shop.java', lines: ['public class Shop {', '    static int count = 0;', '    String name;', '    Shop(String name) { this.name = name; }', '', '    public static void main(String[] args) {', '        int n = 1;', '        Shop s = new Shop("JVM");', '        count += n;', '    }', '}']}];
+function arStage(s, st) {
+  const col = (cls, title, sub, items) => '<div class="zbox ' + cls + '"><div class="zb-h">' + title + '</div><div class="zb-s">' + sub + '</div>' +
+    (items.length ? items.map(it => '<div class="it' + (it.gone ? ' gone' : '') + chg(st, it.id) + '" data-flip="' + it.id + '">' + it.h + '</div>').join('') : '<span class="none">空</span>') + '</div>';
+  return '<div class="stack-v"><div class="zgrid">' + col('zb-ma', '方法区（元空间）', '类的元数据', s.ma) + col('zb-heap', '堆', '对象 · 字符串常量池 · 静态变量', s.heap) + col('zb-stack', 'main 线程的栈', '栈帧 · 局部变量表', s.stack) + '</div>' + (s.note ? '<p class="note">' + s.note + '</p>' : '') + '</div>';
+}
+function arSteps() {
+  const CLS = {id: 'cls', h: '<b>Shop 类</b><span>字段：count、name</span><span>方法：main、&lt;init&gt; 的字节码</span><span>运行时常量池："JVM"、Shop……</span>'};
+  const MIR = c => ({id: 'mir', h: '<b>Class&lt;Shop&gt; 对象</b><span class="mono">static count = ' + c + '</span>'});
+  const STR = {id: 'str', h: '<b>String "JVM"</b><span>已登记进字符串常量池</span>'};
+  const OBJ = (name, gone) => ({id: 'obj', gone, h: '<b>Shop 对象 <span class="ref">@1a2b</span></b><span class="mono">name → ' + name + '</span>' + (gone ? '<span>已经没有引用指向它</span>' : '')});
+  const FR = vars => ({id: 'fr', h: '<b>main 栈帧</b>' + vars.map(v => '<span class="mono">' + v + '</span>').join('')});
+  return [
+    {t: '加载 Shop 类', d: '类的结构和方法字节码放进<b>方法区</b>；堆里生成一个 <code>Class</code> 对象作为入口，静态变量 count 跟着它放在<b>堆</b>里（JDK 7 起）。初始化后 count = 0。', hl: [{p: 'shop', i: 1}], chg: ['cls', 'mir'], s: {ma: [CLS], heap: [MIR(0)], stack: []}},
+    {t: 'main 开始执行：压入栈帧', d: '线程的<b>栈</b>里压入 main 的栈帧，参数 args 在 0 号槽位。', hl: [{p: 'shop', i: 5}], chg: ['fr'], s: {ma: [CLS], heap: [MIR(0)], stack: [FR(['args → String[]'])]}},
+    {t: 'int n = 1：值直接存在栈帧里', d: '基本类型的局部变量，栈帧里存的就是值本身。', hl: [{p: 'shop', i: 6}], chg: ['fr'], s: {ma: [CLS], heap: [MIR(0)], stack: [FR(['args → String[]', 'n = 1'])]}},
+    {t: '字面量 "JVM" 进入字符串常量池', d: '第一次执行到这个字面量，常量池里还没有，就在堆里创建 String 并登记进池（2.4 节）。', hl: [{p: 'shop', i: 7}], chg: ['str'], s: {ma: [CLS], heap: [MIR(0), STR], stack: [FR(['args → String[]', 'n = 1'])]}},
+    {t: 'new Shop：在堆里分配对象', d: '对象分配在<b>堆</b>上，字段先被清零，所以 name 此刻是 null（单元四）。', hl: [{p: 'shop', i: 7}], chg: ['obj'], s: {ma: [CLS], heap: [MIR(0), STR, OBJ('null')], stack: [FR(['args → String[]', 'n = 1'])]}},
+    {t: '构造方法赋值，引用存进 s', d: '构造方法把 name 指向 "JVM"；然后把对象的<b>引用</b>（地址）存进局部变量 s。栈里只有这个引用，对象本身在堆里。', hl: [{p: 'shop', i: 3}, {p: 'shop', i: 7}], chg: ['obj', 'fr'], s: {ma: [CLS], heap: [MIR(0), STR, OBJ('"JVM"')], stack: [FR(['args → String[]', 'n = 1', 's → @1a2b'])]}},
+    {t: 'count += n：改的是堆里的静态变量', d: '静态变量属于类，不属于哪个对象，它跟着 Class 对象放在堆里。', hl: [{p: 'shop', i: 8}], chg: ['mir'], s: {ma: [CLS], heap: [MIR(1), STR, OBJ('"JVM"')], stack: [FR(['args → String[]', 'n = 1', 's → @1a2b'])]}},
+    {t: 'main 返回：栈帧弹出', d: '栈帧一弹出，n 和 s 就消失了，不需要 GC。堆里的 Shop 对象却还在，只是再也没有引用指向它，要等垃圾收集器来回收（单元五）。', hl: [{p: 'shop', i: 9}], chg: ['obj'], s: {ma: [CLS], heap: [MIR(1), STR, OBJ('"JVM"', true)], stack: []}}
+  ];
+}
+
+/* ===================== 2.4 intern ===================== */
+const IN_CODE = [{id: 'in', title: '字符串常量池', lines: ['String a = "hello";', 'String s1 = new String("ja") + new String("vm");', 'String s2 = s1.intern();', 'System.out.println(s2 == s1);        // true', 'System.out.println("javm" == s1);    // true', 'String s3 = new String("he") + new String("llo");', 'System.out.println(s3.intern() == s3); // false']}];
+function inStage(s, st) {
+  const pool = s.pool.map(([k, r]) => '<span class="mono">"' + esc(k) + '"</span><span class="ref' + chg(st, 'p-' + k) + '">→ ' + r + '</span>').join('');
+  const heap = s.heap.map(([id, v, n]) => '<div class="it' + chg(st, 'h-' + id) + '" data-flip="h' + id + '"><b><span class="ref">' + id + '</span> "' + esc(v) + '"</b>' + (n ? '<span>' + n + '</span>' : '') + '</div>').join('');
+  const vars = s.vars.map(([k, r]) => '<span class="mono">' + k + '</span><span class="ref' + chg(st, 'v-' + k) + '">→ ' + r + '</span>').join('');
+  return '<div class="stack-v"><div class="grid2"><div class="box"><div class="box-h">字符串常量池（内容 → 对象）</div><div class="kv">' + (pool || '<span class="none">空</span>') + '</div></div>' +
+    '<div class="box"><div class="box-h">局部变量</div><div class="kv">' + (vars || '<span class="none">空</span>') + '</div></div></div>' +
+    '<div class="box"><div class="box-h">堆里的 String 对象</div><div class="grid2">' + heap + '</div></div>' +
+    (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function inSteps() {
+  const P0 = [['hello', '#1']], H0 = [['#1', 'hello', '字面量']];
+  const P1 = P0.concat([['ja', '#2'], ['vm', '#3']]), H1 = H0.concat([['#4', 'javm', '运行时拼出来的，池里没有 "javm"']]);
+  const P2 = P1.concat([['javm', '#4']]);
+  const P3 = P2.concat([['he', '#5'], ['llo', '#6']]), H3 = H1.concat([['#7', 'hello', '运行时拼出来的新对象']]);
+  return [
+    {t: '字面量 "hello" 进池', d: '代码里的字面量第一次执行时，在堆里创建 String，并登记进字符串常量池。', hl: [{p: 'in', i: 0}], chg: ['p-hello', 'h-#1', 'v-a'], s: {pool: P0, heap: H0, vars: [['a', '#1']]}},
+    {t: '拼接出 s1 = "javm"', d: '"ja"、"vm" 两个字面量进了池；<code>+</code> 在运行时拼出一个新对象 #4。“javm”这个内容，池里还没有。（new 出来的 "ja"、"vm" 副本没画出来。）', hl: [{p: 'in', i: 1}], chg: ['p-ja', 'p-vm', 'h-#4', 'v-s1'], s: {pool: P1, heap: H1, vars: [['a', '#1'], ['s1', '#4']]}},
+    {t: 's1.intern()：池里没有，就登记 s1 自己', d: 'JDK 7 起常量池在堆里，<b>不用复制</b>，直接记下 #4 这个对象的引用，并返回它。所以 s2 和 s1 是同一个对象。', hl: [{p: 'in', i: 2}, {p: 'in', i: 3}], chg: ['p-javm', 'v-s2'], s: {pool: P2, heap: H1, vars: [['a', '#1'], ['s1', '#4'], ['s2', '#4']], out: 's2 == s1 → true'}},
+    {t: '字面量 "javm"：查池拿到的就是 #4', d: '这是代码里第一次执行字面量 "javm"，去池里一查，拿到的正是 s1。', hl: [{p: 'in', i: 4}], s: {pool: P2, heap: H1, vars: [['a', '#1'], ['s1', '#4'], ['s2', '#4']], out: '"javm" == s1 → true'}},
+    {t: '拼接出 s3 = "hello"', d: '又在运行时拼出一个新对象 #7，内容是 "hello"。', hl: [{p: 'in', i: 5}], chg: ['p-he', 'p-llo', 'h-#7', 'v-s3'], s: {pool: P3, heap: H3, vars: [['a', '#1'], ['s1', '#4'], ['s2', '#4'], ['s3', '#7']]}},
+    {t: 's3.intern()：池里已经有了，返回老的', d: '"hello" 在第一行就进池了，intern 返回池里的 #1，不是 s3 自己的 #7。', hl: [{p: 'in', i: 6}], s: {pool: P3, heap: H3, vars: [['a', '#1'], ['s1', '#4'], ['s2', '#4'], ['s3', '#7']], out: 's3.intern() 是 #1，s3 是 #7 → false', bad: true}}
+  ];
+}
+
+/* ===================== 3.2 准备与初始化 ===================== */
+const CL_CODE = {
+  orig: [{id: 'c', title: 'PreparePuzzle.java', lines: ['static class Counter {', '    static Counter INSTANCE = new Counter();  // ①', '    static int a;                              // ②', '    static int b = 0;                          // ③', '', '    Counter() { a++; b++; }', '}']}],
+  moved: [{id: 'c', title: '把 ① 挪到最后', lines: ['static class Counter {', '    static int a;                              // ②', '    static int b = 0;                          // ③', '    static Counter INSTANCE = new Counter();  // ①', '', '    Counter() { a++; b++; }', '}']}]
+};
+function clStage(s, st) {
+  const row = (k, v) => '<span class="mono">' + k + '</span><span class="mono' + chg(st, k) + '" style="font-weight:700;color:var(--accent)">' + v + '</span>';
+  return '<div class="stack-v"><div class="box"><div class="box-h">Counter 的静态变量<span class="chip">' + s.ph + '</span></div><div class="kv">' + row('INSTANCE', s.I) + row('a', s.a) + row('b', s.b) + '</div></div>' +
+    (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function clSteps(v) {
+  const Z = {ph: '准备阶段', I: 'null', a: 0, b: 0};
+  const S = (ph, I, a, b, x) => Object.assign({ph, I, a, b}, x || {});
+  if (v === 'orig') return [
+    {t: '准备：全部设成零值', d: '准备阶段只分配内存、清零，不执行任何赋值语句。', hl: [{p: 'c', i: 1}, {p: 'c', i: 2}, {p: 'c', i: 3}], chg: ['INSTANCE', 'a', 'b'], s: Z},
+    {t: '初始化 ①：new Counter() 执行构造方法', d: '<code>&lt;clinit&gt;</code> 按源码顺序执行。第一句就 new 了一个 Counter，构造方法把 a、b 都从 0 加到 1。', hl: [{p: 'c', i: 1}, {p: 'c', i: 5}], chg: ['INSTANCE', 'a', 'b'], s: S('初始化阶段', '@Counter', 1, 1)},
+    {t: '②：没有赋值语句，什么也不做', d: '<code>static int a;</code> 在 <code>&lt;clinit&gt;</code> 里没有对应的语句，a 保持 1。', hl: [{p: 'c', i: 2}], s: S('初始化阶段', '@Counter', 1, 1)},
+    {t: '③：b = 0，把 b 改回 0', d: '这句赋值在构造方法之后才执行，覆盖了构造方法里加上去的 1。', hl: [{p: 'c', i: 3}], chg: ['b'], s: S('初始化阶段', '@Counter', 1, 0, {out: 'a = 1, b = 0'})}
+  ];
+  return [
+    {t: '准备：全部设成零值', d: '和原来一样，先清零。', hl: [{p: 'c', i: 1}, {p: 'c', i: 2}, {p: 'c', i: 3}], chg: ['INSTANCE', 'a', 'b'], s: Z},
+    {t: '②：什么也不做', d: 'a 保持 0。', hl: [{p: 'c', i: 1}], s: S('初始化阶段', 'null', 0, 0)},
+    {t: '③：b = 0', d: 'b 本来就是 0。', hl: [{p: 'c', i: 2}], chg: ['b'], s: S('初始化阶段', 'null', 0, 0)},
+    {t: '①：最后才 new Counter()', d: '构造方法把 a、b 加到 1，之后再也没有语句覆盖它们。', hl: [{p: 'c', i: 3}, {p: 'c', i: 5}], chg: ['INSTANCE', 'a', 'b'], s: S('初始化阶段', '@Counter', 1, 1, {out: 'a = 1, b = 1'})}
+  ];
+}
+
+/* ===================== 3.6 双亲委派 ===================== */
+const DG_CODE = [{id: 'lc', title: 'ClassLoader.loadClass（简化）', lines: ['Class<?> c = findLoadedClass(name);              // ① 查缓存', 'if (c == null) {', '    if (parent != null) c = parent.loadClass(name); // ② 交给父加载器', '    else c = findBootstrapClassOrNull(name);', '    if (c == null) c = findClass(name);           // ③ 自己找', '}', 'return c;']}];
+const DG_ROWS = [['boot', '启动类加载器', 'JDK 核心类'], ['plat', '平台类加载器', '其余 JDK 模块，如 java.sql'], ['app', '应用类加载器', 'classpath'], ['l1', 'loader-1（自定义）', 'plugin/ 目录']];
+const DG_PILL = {ask: ['wait', '没加载过，交给上级'], miss: ['bad', '找不到'], hit: ['ok', '找到了'], cache: ['ok', '缓存命中'], back: ['idle', '把结果交回下级']};
+function dgStage(s) {
+  const rows = DG_ROWS.map(([k, n, sub], i) => {
+    const st = s.r[k], p = st ? DG_PILL[st] : null;
+    return (i ? '<div class="ldown">▲ 委托 ▼ 退回</div>' : '') + '<div class="lrow' + (s.on === k ? ' on' : '') + (st === 'hit' || st === 'cache' ? ' hit' : '') + '"><div><b>' + n + '</b> <span class="note">' + sub + '</span></div>' + (p ? '<span class="pill ' + p[0] + '">' + p[1] + '</span>' : '<span></span>') + '</div>';
+  }).join('');
+  return '<div class="stack-v"><div class="box"><div class="box-h">请求：' + esc(s.req) + '</div><div class="ladder">' + rows + '</div></div>' + (s.out ? '<div class="verdict ok">' + s.out + '</div>' : '') + '</div>';
+}
+function dgSteps(v) {
+  const L = (i) => [{p: 'lc', i}];
+  if (v === 'plugin') {
+    const R = 'l1.loadClass("Greeter")';
+    return [
+      {t: 'loader-1 收到请求，先查缓存', d: '自己没有加载过 Greeter，不急着去找，先交给上级。', hl: L(0), s: {req: R, on: 'l1', r: {l1: 'ask'}}},
+      {t: '应用类加载器：也先交给上级', d: '每一层都照同样的三步办理。', hl: L(2), s: {req: R, on: 'app', r: {l1: 'ask', app: 'ask'}}},
+      {t: '平台类加载器：继续往上', d: '它的 parent 是 null，于是交给启动类加载器。', hl: L(3), s: {req: R, on: 'plat', r: {l1: 'ask', app: 'ask', plat: 'ask'}}},
+      {t: '启动类加载器：JDK 核心类里没有 Greeter', d: '顶层找不到，返回 null。', hl: L(3), s: {req: R, on: 'boot', r: {l1: 'ask', app: 'ask', plat: 'ask', boot: 'miss'}}},
+      {t: '平台类加载器自己找：没有', d: '上级找不到，才轮到自己的 findClass。', hl: L(4), s: {req: R, on: 'plat', r: {l1: 'ask', app: 'ask', plat: 'miss', boot: 'miss'}}},
+      {t: '应用类加载器自己找：classpath 上也没有', d: 'Greeter 被单独编译到了 plugin/，不在 classpath 上。', hl: L(4), s: {req: R, on: 'app', r: {l1: 'ask', app: 'miss', plat: 'miss', boot: 'miss'}}},
+      {t: 'loader-1 自己找：从 plugin/ 读出字节，defineClass', d: '终于轮到 loader-1 的 findClass。这就是自定义类加载器只需要重写 findClass 的原因：前两步父类已经替你做了。', hl: L(4), s: {req: R, on: 'l1', r: {l1: 'hit', app: 'miss', plat: 'miss', boot: 'miss'}, out: '得到 Greeter，它的加载器是 loader-1。换一个加载器 loader-2 再走一遍，会得到另一个“同名不同类”的 Greeter。'}},
+      {t: '再加载一次：第 ① 步就返回', d: 'loader-1 已经加载过 Greeter，查缓存直接返回同一个类。', hl: L(0), s: {req: R, on: 'l1', r: {l1: 'cache'}, out: 'l1.loadClass("Greeter") == c1 → true'}}
+    ];
+  }
+  const R = 'l1.loadClass("java.lang.String")';
+  return [
+    {t: 'loader-1 收到请求，先交给上级', d: '哪怕 plugin/ 目录里放了一个自己写的 java/lang/String.class，也轮不到 loader-1 先看。', hl: L(2), s: {req: R, on: 'l1', r: {l1: 'ask'}}},
+    {t: '一路交到启动类加载器', d: '应用类、平台类加载器同样先问上级。', hl: L(3), s: {req: R, on: 'boot', r: {l1: 'ask', app: 'ask', plat: 'ask'}}},
+    {t: '启动类加载器找到了 JDK 的 String', d: '核心类由它负责，直接加载成功。', hl: L(3), s: {req: R, on: 'boot', r: {l1: 'ask', app: 'ask', plat: 'ask', boot: 'hit'}}},
+    {t: '结果一路交回 loader-1', d: '下面每一层拿到非 null 的结果就直接返回，不会再调用自己的 findClass。', hl: L(6), s: {req: R, on: 'l1', r: {l1: 'back', app: 'back', plat: 'back', boot: 'hit'}, out: '拿到的是 JDK 的 String，加载器显示为 null。核心类没法被同名类替换。'}}
+  ];
+}
+
+/* ===================== 4.2 TLAB ===================== */
+const TL_N = 24;
+function tlStage(s) {
+  const cells = [];
+  for (let i = 0; i < TL_N; i++) {
+    const o = s.cells[i], own = s.tl ? Object.keys(s.tl).find(k => s.tl[k].some(([a, b]) => i >= a && i < b)) : null;
+    const cls = ['mc'];
+    let st = '';
+    if (o) { cls.push('obj'); st = '--c:var(--' + TCOL[o.t] + ')'; } else cls.push('free');
+    if (own) { cls.push('tl'); if (!o) st = '--c:var(--' + TCOL[own] + ')'; }
+    cells.push('<div class="' + cls.join(' ') + '"' + (st ? ' style="' + st + '"' : '') + '>' + (o ? esc(o.n) : '') + '</div>');
+  }
+  const ptr = [];
+  for (let i = 0; i < TL_N; i++) {
+    const who = Object.keys(s.ptr || {}).filter(k => s.ptr[k] === i);
+    ptr.push('<span' + (who.length === 1 && TCOL[who[0]] ? ' style="--c:var(--' + TCOL[who[0]] + ')"' : '') + '>' + (who.length ? '▲' + who.join('/') : '') + '</span>');
+  }
+  return '<div class="stack-v"><div class="box"><div class="box-h">Eden（每格代表一小块内存）</div><div class="mem" style="--n:' + TL_N + '">' + cells.join('') + '</div><div class="ptrs" style="--n:' + TL_N + '">' + ptr.join('') + '</div>' +
+    (s.tl ? '<p class="note">下划线颜色表示这块内存是哪个线程的 TLAB；▲ 是该线程的分配指针。</p>' : '<p class="note">▲ 是所有线程共用的分配指针 top。</p>') + '</div>' +
+    '<div class="cnt"><span>已分配 <b>' + s.cells.filter(Boolean).length + '</b> 个对象</span><span>CAS <b>' + s.cas + '</b> 次</span><span>失败重试 <b>' + s.fail + '</b> 次</span></div></div>';
+}
+function tlSteps(v) {
+  const E = () => new Array(TL_N).fill(null);
+  const put = (arr, list) => { const a = arr.slice(); list.forEach(([i, t, n]) => { a[i] = {t, n}; }); return a; };
+  if (v === 'tlab') {
+    const c1 = put(E(), [[0, 'T1', 'a']]);
+    const c2 = put(c1, [[8, 'T2', 'b'], [1, 'T1', 'c'], [9, 'T2', 'd'], [2, 'T1', 'e']]);
+    const c3 = put(c2, [[3, 'T1', 'f'], [4, 'T1', 'g'], [5, 'T1', 'h'], [6, 'T1', 'i'], [7, 'T1', 'j'], [10, 'T2', 'k']]);
+    const c4 = put(c3, [[16, 'T1', 'l']]);
+    return [
+      {t: 'T1 第一次分配：先领一块 TLAB', d: 'T1 用一次 CAS，从 Eden 里划走 8 格作为自己的 TLAB。', s: {cells: E(), tl: {T1: [[0, 8]]}, ptr: {T1: 0}, cas: 1, fail: 0}},
+      {t: 'T2 也领一块', d: '同样一次 CAS。两块 TLAB 互不重叠。', s: {cells: E(), tl: {T1: [[0, 8]], T2: [[8, 16]]}, ptr: {T1: 0, T2: 8}, cas: 2, fail: 0}},
+      {t: 'T1 new a：只挪自己的指针', d: '在自己的 TLAB 里分配，就是把自己的指针往后挪一格，<b>不需要任何同步</b>。', s: {cells: c1, tl: {T1: [[0, 8]], T2: [[8, 16]]}, ptr: {T1: 1, T2: 8}, cas: 2, fail: 0}},
+      {t: '两个线程同时分配，互不干扰', d: 'T1、T2 交替 new 了 4 个对象，各挪各的指针，CAS 次数没有增加。', s: {cells: c2, tl: {T1: [[0, 8]], T2: [[8, 16]]}, ptr: {T1: 3, T2: 10}, cas: 2, fail: 0}},
+      {t: 'T1 的 TLAB 用完了', d: 'T1 又分配了 5 个对象，8 格全部用完；T2 那边还有空间。', s: {cells: c3, tl: {T1: [[0, 8]], T2: [[8, 16]]}, ptr: {T1: 8, T2: 11}, cas: 2, fail: 0}},
+      {t: 'T1 再用一次 CAS 领一块新的', d: '只有领新 TLAB 时才需要同步。12 个对象，只用了 3 次 CAS，一次失败都没有。', s: {cells: c4, tl: {T1: [[0, 8], [16, 24]], T2: [[8, 16]]}, ptr: {T1: 17, T2: 11}, cas: 3, fail: 0}}
+    ];
+  }
+  const seq = [['T1', 'a'], ['T2', 'b'], ['T1', 'c'], ['T2', 'd'], ['T2', 'e'], ['T1', 'f'], ['T1', 'g'], ['T2', 'h'], ['T1', 'i'], ['T2', 'j'], ['T1', 'k'], ['T2', 'l']];
+  const upto = n => put(E(), seq.slice(0, n).map(([t, nm], i) => [i, t, nm]));
+  return [
+    {t: '只有一个共用的分配指针', d: '没有 TLAB 时，所有线程都从同一个指针 top 分配。', s: {cells: E(), ptr: {top: 0}, cas: 0, fail: 0}},
+    {t: 'T1、T2 同时 new：都读到 top = 0', d: '两个线程都打算把 top 从 0 挪到 1。', s: {cells: E(), ptr: {top: 0}, cas: 0, fail: 0}},
+    {t: 'T1 的 CAS 成功', d: 'T1 把 top 从 0 改成 1，a 放在第 0 格。', s: {cells: upto(1), ptr: {top: 1}, cas: 1, fail: 0}},
+    {t: 'T2 的 CAS 失败，重读后再试', d: 'T2 期望 top 是 0，实际已经是 1，CAS 失败；重读 top = 1，再 CAS 成功，b 放在第 1 格。', s: {cells: upto(2), ptr: {top: 2}, cas: 3, fail: 1}},
+    {t: '之后的每一次分配都要抢同一个指针', d: '分配 12 个对象，至少要 12 次 CAS，线程越多、分配越频繁，失败重试越多（这里的失败次数是示意）。实测 4 个线程时，关掉 TLAB 慢了约 50 倍。', s: {cells: upto(12), ptr: {top: 12}, cas: 17, fail: 5}}
+  ];
+}
+
+/* ===================== 4.3 对象布局 ===================== */
+const LY = {
+  obj: {label: 'new Object()', parts: [[0, 8, 'mark', 'Mark Word', '8'], [8, 4, 'klass', '类型指针', '4'], [12, 4, 'pad', '对齐填充', '4']], note: '没有字段：12 字节的对象头补齐到 16。'},
+  long: {label: 'Long', parts: [[0, 8, 'mark', 'Mark Word', '8'], [8, 4, 'klass', '类型指针', '4'], [12, 4, 'pad', '空隙', '4'], [16, 8, 'field', 'long value', '8']], note: 'long 要按 8 字节对齐，只能从偏移 16 开始，12 到 16 空着。'},
+  mixed: {label: 'byte b; long l; int i; Object o;', parts: [[0, 8, 'mark', 'Mark Word', '8'], [8, 4, 'klass', '类型指针', '4'], [12, 4, 'field', 'int i', '@12'], [16, 8, 'field', 'long l', '@16'], [24, 1, 'field', 'byte b', '@24'], [25, 3, 'pad', '空隙', '3'], [28, 4, 'ref', 'Object o', '@28']], note: 'JVM 重排了字段：int 塞进对象头后面的 4 字节空隙。偏移量都是 FieldLayout 的实测值。'},
+  arr: {label: 'new int[3]', parts: [[0, 8, 'mark', 'Mark Word', '8'], [8, 4, 'klass', '类型指针', '4'], [12, 4, 'len', '数组长度', '3'], [16, 4, 'field', '[0]', '4'], [20, 4, 'field', '[1]', '4'], [24, 4, 'field', '[2]', '4'], [28, 4, 'pad', '对齐填充', '4']], note: '数组的对象头多 4 字节存长度。16 + 12 = 28，补齐到 32。'},
+  nocoops: {label: '同一个类，关掉压缩指针', parts: [[0, 8, 'mark', 'Mark Word', '8'], [8, 8, 'klass', '类型指针', '8'], [16, 8, 'field', 'long l', '@16'], [24, 4, 'field', 'int i', '@24'], [28, 1, 'field', 'byte b', '@28'], [29, 3, 'pad', '空隙', '3'], [32, 8, 'ref', 'Object o', '@32']], note: '-XX:-UseCompressedOops -XX:-UseCompressedClassPointers：类型指针和引用都变成 8 字节，对象从 32 变成 40 字节。'}
+};
+const LY_K = {mark: 'k-mark', klass: 'k-klass', len: 'k-len', field: 'k-field', ref: 'k-ref', pad: 'k-pad'};
+function layoutLab(root) {
+  root.classList.add('lab');
+  const cfg = {title: '打开一个对象看看', intro: '每行 8 个字节，左边是偏移量。默认开启压缩指针（64 位 JDK 17）。', variants: [{key: 'obj', label: 'Object'}, {key: 'long', label: 'Long'}, {key: 'mixed', label: '四个字段'}, {key: 'arr', label: 'int[3]'}, {key: 'nocoops', label: '四个字段 · 无压缩指针'}], variantLabel: '对象'};
+  root.innerHTML = labTop(cfg) + '<div class="ctrl">' + segHtml(cfg) + '</div><div class="ly"></div>';
+  let cur = 'obj';
+  function render() {
+    const L = LY[cur], total = L.parts.reduce((m, p) => Math.max(m, p[0] + p[1]), 0), rows = [];
+    for (let r = 0; r < total; r += 8) {
+      const ps = L.parts.filter(p => p[0] >= r && p[0] < r + 8).map(p => '<div class="bpart' + (p[2] === 'pad' ? ' pad' : '') + '" style="--kc:var(--' + LY_K[p[2]] + ');grid-column:' + (p[0] - r + 1) + ' / span ' + p[1] + '"><b>' + esc(p[3]) + '</b><span>' + esc(p[4]) + '</span></div>').join('');
+      rows.push('<div class="brow"><span class="boff">' + r + '</span><div class="bcells">' + ps + '</div></div>');
+    }
+    $('.ly', root).innerHTML = '<div class="box"><div class="box-h"><code>' + esc(L.label) + '</code></div><div class="bytemap">' + rows.join('') + '</div><div class="total"><b>' + total + ' 字节</b><span class="note">' + L.note + '</span></div></div>';
+    $$('.seg button', root).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === cur ? 'true' : 'false'));
+  }
+  $$('.seg button', root).forEach(b => { b.onclick = () => { cur = b.dataset.v; render(); }; });
+  root._key = e => {
+    const keys = cfg.variants.map(v => v.key), i = keys.indexOf(cur);
+    if (e.key === 'ArrowRight') { cur = keys[(i + 1) % keys.length]; render(); return true; }
+    if (e.key === 'ArrowLeft') { cur = keys[(i + keys.length - 1) % keys.length]; render(); return true; }
+    return false;
+  };
+  render();
+}
+
+/* ===================== 引用图（可达性、三色标记共用） ===================== */
+let GID = 0;
+function graphSvg(g, w, h) {
+  const uid = 'g' + (++GID) + '-', N = {};
+  g.nodes.forEach(n => { N[n.id] = n; });
+  const half = n => [(n.w || 76) / 2, 17];
+  const edges = g.edges.map(e => {
+    const a = N[e.f], b = N[e.t];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const clip = (n, sx) => { const [hw, hh] = half(n); const k = Math.min(hw / Math.abs(dx || 1e-6), hh / Math.abs(dy || 1e-6)); return [n.x + sx * dx * k, n.y + sx * dy * k]; };
+    const [x1, y1] = clip(a, 1), [x2, y2] = clip(b, -1);
+    const cls = e.s || '';
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    return '<line class="ge ' + cls + '" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" marker-end="url(#' + uid + (cls || 'ok') + ')"/>' + (e.l ? '<text class="glbl" x="' + mx.toFixed(0) + '" y="' + (my - 6).toFixed(0) + '" text-anchor="middle">' + esc(e.l) + '</text>' : '');
+  }).join('');
+  const nodes = g.nodes.map(n => { const [hw] = half(n); return '<g class="gn ' + (n.c || '') + '"><rect x="' + (n.x - hw) + '" y="' + (n.y - 17) + '" width="' + hw * 2 + '" height="34" rx="8"/><text x="' + n.x + '" y="' + (n.y + 4.5) + '" text-anchor="middle">' + esc(n.label) + '</text></g>'; }).join('');
+  const mk = (id, cls) => '<marker id="' + uid + id + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="' + cls + '"/></marker>';
+  return '<svg class="gsvg" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="对象引用关系"><defs>' + mk('ok', 'gah') + mk('new', 'gah-new') + mk('del', 'gah-del') + mk('off', 'gah-off') + '</defs>' + edges + nodes + '</svg>';
+}
+
+/* ===================== 5.2 可达性分析 ===================== */
+function rcStage(s) {
+  return '<div class="stack-v"><div class="box">' + graphSvg(s.g, 560, 250) + '<div class="legend"><span><i style="background:var(--accent-bg);border-color:var(--accent)"></i>GC Roots</span><span><i style="background:var(--ok-bg);border-color:var(--ok)"></i>可达（活）</span><span><i style="background:var(--bad-bg);border-color:var(--bad)"></i>不可达（垃圾）</span></div></div>' + (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function rcSteps() {
+  const base = (c, cut) => ({
+    nodes: [
+      {id: 'ra', label: '栈：a', x: 60, y: 45, c: 'root'}, {id: 'rb', label: '栈：b', x: 60, y: 125, c: 'root'}, {id: 'rs', label: 'CACHE', x: 60, y: 210, c: 'root'},
+      {id: 'A', label: 'A', x: 250, y: 45, c: c.A}, {id: 'B', label: 'B', x: 250, y: 125, c: c.B}, {id: 'F', label: 'F', x: 450, y: 45, c: c.F},
+      {id: 'C', label: 'C', x: 250, y: 210, c: c.C}, {id: 'D', label: 'D', x: 450, y: 210, c: c.D}, {id: 'E', label: 'E', x: 450, y: 125, c: c.E}
+    ],
+    edges: [
+      {f: 'ra', t: 'A', s: cut ? 'off' : ''}, {f: 'rb', t: 'B', s: cut ? 'off' : ''},
+      {f: 'A', t: 'B'}, {f: 'B', t: 'A'}, {f: 'A', t: 'F'}, {f: 'rs', t: 'C'}, {f: 'C', t: 'D'}, {f: 'D', t: 'E'}
+    ]
+  });
+  return [
+    {t: '引用关系', d: '栈里的局部变量 a、b 分别指向 A、B，A 和 B 互相引用，A 还引用着 F；静态变量 CACHE 指向 C，C → D → E。左边一列都是 GC Roots。', s: {g: base({}, false)}},
+    {t: 'a = null; b = null;', d: '两条从根出发的引用断了。A、B 之间的引用还在，按引用计数，它们的计数都不为零。', s: {g: base({}, true)}},
+    {t: '从 GC Roots 出发：CACHE → C', d: '可达性分析只从根出发顺着引用走。现在只有 CACHE 还指着对象。', s: {g: base({C: 'live'}, true)}},
+    {t: '顺着引用继续走：C → D → E', d: '能走到的都标记为活对象。', s: {g: base({C: 'live', D: 'live', E: 'live'}, true)}},
+    {t: '走不动了：A、B、F 都是垃圾', d: '没有任何一条路从根通到 A、B。它们互相引用也没用；F 只被垃圾引用着，同样是垃圾。', s: {g: base({C: 'live', D: 'live', E: 'live', A: 'dead', B: 'dead', F: 'dead'}, true), out: '回收 A、B、F；保留 C、D、E。', bad: false}}
+  ];
+}
+
+/* ===================== 6.1 三种回收算法 ===================== */
+const AL_SWEEP = [['A', 1, 1], ['b', 2, 0], ['C', 1, 1], ['d', 1, 0], ['E', 2, 1], ['f', 1, 0], ['G', 1, 1], ['h', 2, 0], ['I', 1, 1], ['j', 2, 0], ['K', 1, 1], ['m', 1, 0]];
+function memRow(items, n) {
+  return '<div class="mem" style="--n:' + n + '">' + items.map(it => '<div class="mc ' + it.c + '" style="grid-column:span ' + it.s + '"' + (it.f ? ' data-flip="' + it.f + '"' : '') + '>' + esc(it.n || '') + '</div>').join('') + '</div>';
+}
+function alStage(s) {
+  const rows = s.rows.map(r => '<div class="box"><div class="box-h">' + r.h + '</div>' + memRow(r.items, r.n) + '</div>').join('');
+  return '<div class="stack-v">' + rows + (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function alSteps(v) {
+  const objs = (list, mode) => list.map(([n, sz, live]) => ({n: mode === 'free' && !live ? '' : n, s: sz, c: mode === 'plain' ? 'obj' : (live ? 'live' : (mode === 'free' ? 'free' : 'dead')), f: live ? 'o' + n : null}));
+  const free = k => Array.from({length: k}, () => ({s: 1, c: 'free'}));
+  if (v === 'sweep' || v === 'compact') {
+    const head = [
+      {t: '回收前：内存被占满', d: '16 格内存里放着 12 个对象（有的占 2 格）。接下来想分配一个占 <b>3 格</b>的新对象 X。', s: {rows: [{h: '堆', n: 16, items: objs(AL_SWEEP, 'plain')}]}},
+      {t: '标记：找出活对象', d: '从 GC Roots 出发（单元五），绿色是活的，红色是垃圾。大写字母是活对象。', s: {rows: [{h: '堆', n: 16, items: objs(AL_SWEEP, 'mark')}]}}
+    ];
+    if (v === 'sweep') return head.concat([
+      {t: '清除：把垃圾占的地方标成空闲', d: '活对象原地不动，垃圾的位置变成空闲。很快，但空闲空间被切成了好几小段。', s: {rows: [{h: '堆', n: 16, items: objs(AL_SWEEP, 'free')}]}},
+      {t: '分配 X（3 格）：失败', d: '空闲一共 9 格，可最大的一段只有 2 格，放不下 3 格的 X。这就是<b>内存碎片</b>。分配时还得查空闲列表找合适的段。', s: {rows: [{h: '堆', n: 16, items: objs(AL_SWEEP, 'free')}], out: '空闲 9 格，最大连续 2 格：X 分配失败，只能再触发一次 GC。', bad: true}}
+    ]);
+    const live = AL_SWEEP.filter(o => o[2]);
+    const packed = live.map(([n, sz]) => ({n, s: sz, c: 'live', f: 'o' + n}));
+    return head.concat([
+      {t: '整理：把活对象依次挪到一端', d: '活对象向左滑动、紧挨着排好，所有指向它们的引用都要改成新地址。这一步要移动对象，最费时间。', s: {rows: [{h: '堆', n: 16, items: packed.concat(free(16 - 7))}]}},
+      {t: '分配 X（3 格）：成功', d: '空闲空间连成一整段，用指针碰撞就能分配。代价是移动了 6 个对象、更新了它们的引用。', s: {rows: [{h: '堆', n: 16, items: packed.concat([{n: 'X', s: 3, c: 'newx'}]).concat(free(6))}], out: '没有碎片，也没有浪费空间；但整理期间业务线程得停着。'}}
+    ]);
+  }
+  const FROM = [['A', 1, 1], ['b', 2, 0], ['C', 1, 1], ['d', 1, 0], ['E', 2, 1], ['f', 1, 0]];
+  const liveCopy = [['A', 1], ['C', 1], ['E', 2]].map(([n, s]) => ({n, s, c: 'live', f: 'o' + n}));
+  return [
+    {t: '内存分成两半，只用一半', d: '左半边 8 格在用（from），右半边 8 格一直空着（to）。', s: {rows: [{h: 'from（在用）', n: 8, items: objs(FROM, 'plain')}, {h: 'to（空着）', n: 8, items: free(8)}]}},
+    {t: '标记：找出活对象', d: 'A、C、E 是活的。', s: {rows: [{h: 'from（在用）', n: 8, items: objs(FROM, 'mark')}, {h: 'to（空着）', n: 8, items: free(8)}]}},
+    {t: '把活对象复制到 to，紧挨着排好', d: '只处理活对象，垃圾不用管。活对象越少，复制越快。', s: {rows: [{h: 'from', n: 8, items: objs(FROM, 'mark')}, {h: 'to', n: 8, items: liveCopy.concat(free(4))}]}},
+    {t: '整块清空 from，两边互换角色', d: '没有碎片，新对象用指针碰撞分配。代价是<b>永远有一半空间空着</b>。', s: {rows: [{h: 'to（空着，下次复制用）', n: 8, items: free(8)}, {h: 'from（在用）', n: 8, items: liveCopy.concat(free(4))}], out: '新生代的对象大多活不过一次 GC，正适合复制算法；Eden 加两个 Survivor 只浪费 10%（6.2 节）。'}}
+  ];
+}
+
+/* ===================== 6.3 对象的一生 ===================== */
+function gnStage(s, st) {
+  const ob = o => '<span class="gob ' + (o.c || '') + '" data-flip="g' + o.n + '">' + esc(o.n) + (o.a ? '<sup>' + o.a + '</sup>' : '') + '</span>';
+  const z = (cls, name, tag, cap, list) => '<div class="gz ' + cls + (list.length >= cap ? ' full' : '') + chg(st, name) + '"><div class="gz-h">' + name + '<span>' + tag + '</span></div><div class="gobjs">' + (list.length ? list.map(ob).join('') : '<span class="none">空</span>') + '</div></div>';
+  return '<div class="stack-v"><div class="gens">' + z('gz-eden', 'Eden', '6 格', 6, s.E) + z('gz-s', 'S0', s.from === 0 ? 'from' : 'to', 2, s.S0) + z('gz-s', 'S1', s.from === 1 ? 'from' : 'to', 2, s.S1) + z('gz-old', '老年代', '晋升阈值 3', 5, s.O) + '</div><p class="note">右上角的小数字是年龄。为了少走几轮，阈值设成 3（默认 15）。</p>' + (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function gnSteps() {
+  const o = (n, a, c) => ({n, a, c});
+  return [
+    {t: '新对象在 Eden 出生', d: 'a 到 f 依次在 Eden 分配。Eden 满了。', chg: ['Eden'], s: {E: ['a', 'b', 'c', 'd', 'e', 'f'].map(n => o(n)), S0: [], S1: [], O: [], from: 0}},
+    {t: 'new g 放不下：触发 Minor GC，先标记', d: '只有 b、e 还被引用着，其余都是垃圾。', s: {E: ['a', 'b', 'c', 'd', 'e', 'f'].map(n => o(n, 0, n === 'b' || n === 'e' ? 'live' : 'dead')), S0: [], S1: [], O: [], from: 0}},
+    {t: '活对象复制进 S0，年龄变成 1', d: 'Eden 整块清空，g 顺利分配。S0 现在是 from。', chg: ['S0'], s: {E: [o('g')], S0: [o('b', 1), o('e', 1)], S1: [], O: [], from: 0}},
+    {t: 'Eden 又满了，再次 Minor GC', d: 'g 到 l 填满了 Eden。这一轮 Eden 里活着的是 h、k，S0 里 b 还活着，e 已经死了。', s: {E: ['g', 'h', 'i', 'j', 'k', 'l'].map(n => o(n, 0, n === 'h' || n === 'k' ? 'live' : 'dead')), S0: [o('b', 1, 'live'), o('e', 1, 'dead')], S1: [], O: [], from: 0}},
+    {t: '复制进 S1：放不下的提前晋升', d: 'b（年龄 2）、h（年龄 1）进了 S1；S1 只有 2 格，k 放不下，<b>直接进老年代</b>。Eden 和 S0 清空，S1 变成 from。', chg: ['S1', '老年代'], s: {E: [o('m')], S0: [], S1: [o('b', 2), o('h', 1)], O: [o('k', 1)], from: 1}},
+    {t: '第三次 Minor GC：b 到了阈值', d: 'b 熬过了第三次 GC，年龄到 3，晋升老年代；h 年龄 2，回到 S0。', chg: ['S0', '老年代'], s: {E: [o('s')], S0: [o('h', 2)], S1: [], O: [o('k', 1), o('b', 3)], from: 0}},
+    {t: '大对象直接进老年代', d: 'BIG 是个很大的数组，在 Survivor 之间来回复制太贵，直接分配在老年代。', chg: ['老年代'], s: {E: [o('s'), o('t')], S0: [o('h', 2)], S1: [], O: [o('k', 1), o('b', 3), {n: 'BIG', c: 'big'}], from: 0}},
+    {t: '老年代越来越满', d: '晋升的对象不断进入老年代。哪天老年代也放不下了，就要 Full GC，回收整个堆（6.5 节）。', s: {E: [o('s'), o('t'), o('u')], S0: [o('h', 2)], S1: [], O: [o('k', 1), o('b', 3), {n: 'BIG', c: 'big'}, o('p', 3), o('q', 3)], from: 0, out: '老年代满了 → Full GC，停顿通常比 Minor GC 长得多。', bad: true}}
+  ];
+}
+
+/* ===================== 7.3 三色标记 ===================== */
+const TC_CODE = {
+  none: [{id: 'm', title: '业务线程（和 GC 并发运行）', lines: ['A.ref = C;     // 黑色 A 新增了指向白色 C 的引用', 'B.ref = null;  // 删掉灰色 B 指向 C 的引用']}],
+  incr: [{id: 'm', title: '业务线程 + 写屏障（增量更新）', lines: ['A.ref = C;     // 写屏障：A 新增了引用，记下 A', 'B.ref = null;']}],
+  satb: [{id: 'm', title: '业务线程 + 写屏障（SATB）', lines: ['A.ref = C;', 'B.ref = null;  // 写屏障：删除前把旧值 C 记下']}]
+};
+function tcStage(s) {
+  const legend = '<div class="legend"><span><i style="background:var(--surface)"></i>白：还没访问</span><span><i style="background:var(--n-grey)"></i>灰：访问了，引用还没扫完</span><span><i style="background:var(--n-black)"></i>黑：全部扫完</span></div>';
+  return '<div class="stack-v"><div class="box">' + graphSvg(s.g, 520, 230) + legend + '</div>' +
+    '<div class="box"><div class="box-h">写屏障记下的</div>' + (s.rec ? '<span class="mono">' + s.rec + '</span>' : '<span class="none">—</span>') + '</div>' +
+    (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function tcSteps(v) {
+  const G = (c, e) => ({
+    nodes: [{id: 'R', label: 'GC Roots', x: 60, y: 115, w: 96, c: 'root'}, {id: 'A', label: 'A', x: 210, y: 115, c: c.A}, {id: 'B', label: 'B', x: 380, y: 45, c: c.B}, {id: 'C', label: 'C', x: 380, y: 190, c: c.C}],
+    edges: [{f: 'R', t: 'A'}, {f: 'A', t: 'B'}].concat(e)
+  });
+  const H = i => [{p: 'm', i, t: '业务'}];
+  const BC = {f: 'B', t: 'C'}, AC_NEW = {f: 'A', t: 'C', s: 'new', l: '新增'}, AC = {f: 'A', t: 'C'}, BC_DEL = {f: 'B', t: 'C', s: 'del', l: '已删除'};
+  const head = [
+    {t: '开始并发标记', d: '根 → A → B → C，一开始全是白色。GC 线程开始标记，业务线程照常运行。', s: {g: G({A: 'w', B: 'w', C: 'w'}, [BC])}},
+    {t: 'GC 扫描 A：A 变黑，B 变灰', d: 'A 自己和它的引用都扫完了，染黑；B 被发现但还没扫，染灰。C 还是白的，要等扫描 B 时才能被发现。', s: {g: G({A: 'b', B: 'g', C: 'w'}, [BC])}},
+    {t: '业务线程：A.ref = C', d: '<b>条件一</b>：黑色的 A 新增了一条指向白色 C 的引用。A 已经扫完，GC 不会再看它。', hl: H(0), s: {g: G({A: 'b', B: 'g', C: 'w', ...(v === 'incr' ? {A: 'b rec'} : {})}, [BC, AC_NEW]), rec: v === 'incr' ? 'A（新增了引用的黑色对象）' : ''}},
+    {t: '业务线程：B.ref = null', d: '<b>条件二</b>：灰色的 B 到 C 的引用被删了。现在只有黑色的 A 指着 C。', hl: H(1), s: {g: G({A: 'b', B: 'g', C: v === 'satb' ? 'g' : 'w', ...(v === 'incr' ? {A: 'b rec'} : {})}, [BC_DEL, AC_NEW]), rec: v === 'incr' ? 'A（新增了引用的黑色对象）' : v === 'satb' ? 'C（被删除的旧引用，按灰色处理）' : ''}}
+  ];
+  if (v === 'none') return head.concat([
+    {t: 'GC 继续：扫描 B，B 变黑', d: 'B 已经没有引用了，染黑。再也没有灰色对象，标记结束。', s: {g: G({A: 'b', B: 'b', C: 'w'}, [AC])}},
+    {t: '漏标：C 被当成垃圾回收', d: 'C 还是白色，被回收了；可 A 还引用着它，业务线程下次访问 A.ref 就会读到已经释放的内存。', s: {g: G({A: 'b', B: 'b', C: 'dead'}, [AC]), out: '两个条件同时满足，活对象被回收。这是绝对不允许发生的。', bad: true}}
+  ]);
+  if (v === 'incr') return head.concat([
+    {t: '并发标记结束：B 变黑', d: '和没有屏障时一样，C 暂时还是白色。', s: {g: G({A: 'b rec', B: 'b', C: 'w'}, [AC]), rec: 'A（新增了引用的黑色对象）'}},
+    {t: '重新标记（STW）：把记下的 A 再扫一遍', d: '停下业务线程，把写屏障记下的黑色对象重新扫描，从 A 找到了 C，C 被标记。', s: {g: G({A: 'b', B: 'b', C: 'b'}, [AC]), out: '增量更新破坏的是条件一：黑色对象新增的引用不会被漏掉。CMS 用的就是它。'}}
+  ]);
+  return head.concat([
+    {t: 'GC 继续：扫描 B 和 C', d: 'B 没有引用了，染黑；C 被写屏障当成灰色，扫描后染黑。', s: {g: G({A: 'b', B: 'b', C: 'b'}, [AC]), rec: 'C（被删除的旧引用，按灰色处理）'}},
+    {t: '标记结束：C 活下来了', d: 'SATB 按“开始标记那一刻的快照”来标记：那一刻 C 是可达的，就当它活着。', s: {g: G({A: 'b', B: 'b', C: 'b'}, [AC]), out: 'SATB 破坏的是条件二。代价是：如果 C 在标记期间真的死了，它也要等下一轮才被回收（浮动垃圾）。G1 用的就是它。'}}
+  ]);
+}
+
+/* ===================== 7.5 G1 ===================== */
+const G1_INIT = 'E O F E H H O S O F E O F E O O F E O S O F E F O F F O F F F F'.split(' ');
+function g1Stage(s) {
+  const cells = s.r.map((r, i) => {
+    const g = s.gb && s.gb[i] != null && r === 'O' ? '<small>' + s.gb[i] + '%</small>' : '';
+    return '<div class="rc ' + r + (s.sel && s.sel.includes(i) ? ' sel' : '') + '">' + (r === 'F' ? '' : r) + g + '</div>';
+  }).join('');
+  const count = k => s.r.filter(x => x === k).length;
+  return '<div class="stack-v"><div class="box"><div class="box-h">堆：32 个 Region（示意，真实约 2048 个）</div><div class="rg">' + cells + '</div>' +
+    '<div class="legend" style="margin-top:8px"><span>E ' + count('E') + '</span><span>S ' + count('S') + '</span><span>O ' + count('O') + '</span><span>H ' + count('H') + '</span><span>空闲 ' + count('F') + '</span>' + (s.gb ? '<span>O 里的百分比：垃圾占比</span>' : '') + '</div></div>' +
+    (s.out ? '<div class="verdict ' + (s.bad ? 'bad' : 'ok') + '">' + s.out + '</div>' : '') + '</div>';
+}
+function g1Steps() {
+  const r0 = G1_INIT.slice();
+  const r1 = r0.map(x => (x === 'E' || x === 'S' ? 'F' : x));
+  [9, 23].forEach(i => { r1[i] = 'S'; });
+  r1[25] = 'O';
+  const oIdx = r1.map((x, i) => (x === 'O' ? i : -1)).filter(i => i >= 0);
+  const GB = [12, 85, 30, 100, 18, 64, 92, 25, 40, 100, 78, 15, 55];
+  const gb = {};
+  oIdx.forEach((i, k) => { gb[i] = GB[k % GB.length]; });
+  const r3 = r1.slice();
+  oIdx.forEach(i => { if (gb[i] === 100) r3[i] = 'F'; });
+  const gb3 = Object.assign({}, gb);
+  oIdx.forEach(i => { if (gb[i] === 100) delete gb3[i]; });
+  const left = oIdx.filter(i => r3[i] === 'O').sort((a, b) => gb3[b] - gb3[a]);
+  const sel = left.slice(0, 3);
+  const r3e = r3.slice();
+  [2, 12, 16, 21].forEach(i => { if (r3e[i] === 'F') r3e[i] = 'E'; });
+  const r4 = r3e.map((x, i) => (sel.includes(i) || x === 'E' || x === 'S' ? 'F' : x));
+  const fr = r4.map((x, i) => (x === 'F' ? i : -1)).filter(i => i >= 0);
+  r4[fr[0]] = 'O'; r4[fr[1]] = 'S';
+  const gb4 = {};
+  Object.keys(gb3).forEach(k => { if (!sel.includes(+k)) gb4[k] = gb3[k]; });
+  gb4[fr[0]] = 0;
+  const r5 = r4.slice();
+  const run = [];
+  for (let i = 0; i < r5.length - 2; i++) if (r5[i] === 'F' && r5[i + 1] === 'F' && r5[i + 2] === 'F') { run.push(i, i + 1, i + 2); break; }
+  run.forEach(i => { r5[i] = 'H'; });
+  return [
+    {t: '堆被切成大小相同的 Region', d: '每个 Region 可以是 Eden（E）、Survivor（S）、Old（O）或 Humongous（H）。新生代、老年代不再是连续的两大块。', s: {r: r0}},
+    {t: 'Young GC（STW）：清空所有 E 和 S', d: 'Eden 用完时触发。所有 E、S 里的活对象被复制到几个空闲 Region（变成新的 S，年龄够了的进 O），原来的 E、S 整块变空。', s: {r: r1}},
+    {t: '并发标记：统计每个 O 里有多少垃圾', d: '堆占用超过阈值（默认 45%）后启动，和业务线程并发进行。结束后，G1 知道了每个老年代 Region 的垃圾占比。', s: {r: r1, gb}},
+    {t: 'Remark 和 Cleanup（很短的 STW）', d: '最终标记处理 SATB 记录；清理阶段把 100% 是垃圾的 Region 直接回收，不用复制任何东西。', s: {r: r3, gb: gb3}},
+    {t: 'Mixed GC：新生代 + 垃圾最多的几个 O', d: '在停顿目标（MaxGCPauseMillis）允许的范围内，挑出回收价值最高的 3 个老年代 Region（红框），和所有新生代一起回收。', s: {r: r3e, gb: gb3, sel}},
+    {t: '回收完成：活对象被搬进空闲 Region', d: '被选中的 Region 里那点活对象被复制到一个新 Region，原来的整块变空。Region 之间是复制，所以 G1 没有碎片。', s: {r: r4, gb: gb4}},
+    {t: '大对象：占用连续的 Humongous Region', d: '超过半个 Region 的对象直接放进 H，一个放不下就占连续的几个。', s: {r: r5, gb: gb4, out: 'Young GC → 并发标记 → Mixed GC 循环往复；回收速度跟不上分配速度时，才退化成 Full GC。'}}
+  ];
+}
+
+/* ===================== 注册与挂载 ===================== */
+const LABS = {
+  bytecode: el => stepLab(el, {title: '在栈帧里执行 add(3, 4)', intro: '左边高亮的是正在执行的字节码，右边是这一刻的局部变量表和操作数栈。', code: () => ADD_CODE, steps: addSteps, stage: frameStage}),
+  ipp: el => stepLab(el, {title: 'i = i++ 和 j = ++j', intro: '盯住 iinc 和 iload 的先后顺序。', variants: [{key: 'post', label: 'i = i++'}, {key: 'pre', label: 'j = ++j'}], variantLabel: '写法', code: v => IPP_CODE[v], steps: ippSteps, stage: frameStage}),
+  callstack: el => stepLab(el, {title: '递归时栈怎么长高', intro: '切换到“没有结束条件”，看栈是怎么被撑爆的。', variants: [{key: 'ok', label: '有结束条件'}, {key: 'bad', label: '没有结束条件'}], variantLabel: '递归写法', code: v => CS_CODE[v], steps: csSteps, stage: csStage}),
+  areas: el => stepLab(el, {title: '一段代码里的东西，各放在哪', intro: '跟着 Shop 的 main 方法走一遍，看类、对象、字符串、静态变量和局部变量分别落在哪块区域。', code: () => AR_CODE, steps: arSteps, stage: arStage}),
+  intern: el => stepLab(el, {title: 'intern 到底登记了什么', intro: '对象编号是示意。看常量池里登记的是哪个对象。', code: () => IN_CODE, steps: inSteps, stage: inStage}),
+  clinit: el => stepLab(el, {title: '准备清零，初始化按顺序赋值', intro: '切换 ① 的位置，对比结果。', variants: [{key: 'orig', label: '① 在最前'}, {key: 'moved', label: '① 在最后'}], variantLabel: '语句顺序', code: v => CL_CODE[v], steps: clSteps, stage: clStage}),
+  delegation: el => stepLab(el, {title: '一个加载请求的往返', intro: '请求从下往上一路委托，再从上往下一层层退回来自己找。', variants: [{key: 'plugin', label: '加载 Greeter'}, {key: 'string', label: '加载 java.lang.String'}], variantLabel: '要加载的类', code: () => DG_CODE, steps: dgSteps, stage: dgStage}),
+  tlab: el => stepLab(el, {title: '两个线程同时分配对象', intro: '对比有无 TLAB 时，需要同步（CAS）的次数。', variants: [{key: 'tlab', label: '有 TLAB'}, {key: 'cas', label: '没有 TLAB'}], variantLabel: '分配方式', steps: tlSteps, stage: tlStage}),
+  layout: layoutLab,
+  reach: el => stepLab(el, {title: '从 GC Roots 出发找活对象', intro: '对应 CycleRef：A、B 互相引用，但从根走不到它们。', steps: rcSteps, stage: rcStage}),
+  algos: el => stepLab(el, {title: '同一块内存，三种回收方式', intro: '切换算法，看回收后的内存长什么样。', variants: [{key: 'sweep', label: '标记-清除'}, {key: 'copy', label: '复制'}, {key: 'compact', label: '标记-整理'}], variantLabel: '算法', steps: alSteps, stage: alStage}),
+  generations: el => stepLab(el, {title: '对象的一生', intro: '从 Eden 出生，在两个 Survivor 之间搬家，到晋升老年代。', steps: gnSteps, stage: gnStage}),
+  tricolor: el => stepLab(el, {title: '并发标记时的漏标', intro: '同样两句业务代码，切换写屏障，看 C 的下场。', variants: [{key: 'none', label: '没有屏障'}, {key: 'incr', label: '增量更新'}, {key: 'satb', label: 'SATB'}], variantLabel: '写屏障', code: v => TC_CODE[v], steps: tcSteps, stage: tcStage}),
+  g1: el => stepLab(el, {title: 'G1 的一轮回收', intro: '字母是 Region 当前的角色：E 是 Eden，S 是 Survivor，O 是 Old，H 是 Humongous，空白是空闲。', steps: g1Steps, stage: g1Stage})
+};
+$$('.lab-mount').forEach(el => {
+  const f = LABS[el.dataset.lab];
+  try { f(el); } catch (err) { el.innerHTML = '<p class="none">这个演示加载失败：' + esc(err.message) + '</p>'; if (window.console) console.error(err); }
+});
+
+/* ===================== 代码块高亮 / 复制 ===================== */
+$$('pre.codeblock').forEach(pre => {
+  const code = $('code', pre), raw = code.textContent;
+  if (pre.dataset.lang === 'java') code.innerHTML = raw.split('\n').map(hiJava).join('\n');
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'copy'; b.textContent = '复制';
+  b.onclick = () => {
+    const done = ok => { b.textContent = ok ? '已复制' : '请手动复制'; setTimeout(() => { b.textContent = '复制'; }, 1600); };
+    try { navigator.clipboard.writeText(raw).then(() => done(true), () => done(false)); } catch (e) { done(false); }
+  };
+  pre.insertBefore(b, code);
+});
+
+/* ===================== 自测 ===================== */
+const store = {get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* 浏览器不允许存储时忽略 */ } }};
+function quizProgress(sec) {
+  const all = $$('.qz', sec), ok = all.filter(q => $('.qz-cb', q).checked).length, p = $('.qz-progress', sec);
+  if (p) p.textContent = ok ? ok + ' / ' + all.length : '';
+}
+$$('section.quiz').forEach(sec => {
+  $$('.qz', sec).forEach(q => {
+    const cb = $('.qz-cb', q), btn = $('.qz-show', q), ans = $('.qz-a', q), key = 'jvm-course-' + q.dataset.qid;
+    cb.checked = store.get(key) === '1';
+    q.classList.toggle('done', cb.checked);
+    btn.textContent = '答案';
+    btn.onclick = () => { ans.hidden = !ans.hidden; btn.textContent = ans.hidden ? '答案' : '收起'; btn.setAttribute('aria-expanded', String(!ans.hidden)); };
+    cb.onchange = () => { store.set(key, cb.checked ? '1' : '0'); q.classList.toggle('done', cb.checked); quizProgress(sec); };
+  });
+  quizProgress(sec);
+});
+
+/* ===================== 首页、目录、翻页 ===================== */
+const label = u => (u.cn === '附录' ? '附录' : '单元' + u.cn);
+const home = $('#view-home');
+home.insertAdjacentHTML('afterbegin', '<header class="home-hero"><div class="eyebrow">Java 虚拟机 · 交互学习版</div><h1>JVM 交互学习手册</h1>' +
+  '<p class="lead">从字节码在栈帧里怎么执行，到对象怎么出生、怎么被回收，再到线上问题怎么查。文字讲不清的地方，都做成了可以一步步执行的演示。</p>' +
+  '<ol class="unitmap">' + TOC.map(u => '<li><a href="#' + u.id + '"><span class="un">' + label(u) + '</span><span class="nm">' + esc(u.title) + '</span>' + (u.motto ? '<span class="mt">' + esc(u.motto) + '</span>' : '') + '</a></li>').join('') + '</ol></header>');
+
+const toc = $('#toc');
+toc.innerHTML = '<a href="#home" class="toc-u" data-u="home">导读</a>' + TOC.map(u => '<div class="toc-unit" data-u="' + u.id + '"><a href="#' + u.id + '" class="toc-u" data-u="' + u.id + '"><span class="toc-n">' + label(u) + '</span>' + esc(u.title) + '</a>' + (u.sections.length ? '<ol class="toc-s">' + u.sections.map(s => '<li><a href="#' + s.id + '" data-s="' + s.id + '">' + esc(s.title) + '</a></li>').join('') + '</ol>' : '') + '</div>').join('');
+TOC.forEach((u, i) => {
+  const v = $('#view-' + u.id), prev = i === 0 ? ['#home', '导读'] : ['#' + TOC[i - 1].id, label(TOC[i - 1]) + ' ' + TOC[i - 1].title], next = TOC[i + 1] ? ['#' + TOC[i + 1].id, label(TOC[i + 1]) + ' ' + TOC[i + 1].title] : null;
+  v.insertAdjacentHTML('beforeend', '<nav class="pager" aria-label="翻页"><a href="' + prev[0] + '"><span>上一篇</span><b>' + esc(prev[1]) + '</b></a>' + (next ? '<a href="' + next[0] + '" style="text-align:right"><span>下一篇</span><b>' + esc(next[1]) + '</b></a>' : '') + '</nav>');
+});
+home.insertAdjacentHTML('beforeend', '<nav class="pager" aria-label="翻页"><span></span><a href="#' + TOC[0].id + '" style="text-align:right"><span>开始</span><b>' + esc(label(TOC[0]) + ' ' + TOC[0].title) + '</b></a></nav>');
+$('#toc-btn').onclick = () => { const s = $('#side'), open = !s.classList.contains('open'); s.classList.toggle('open', open); $('#toc-btn').setAttribute('aria-expanded', String(open)); };
+
+/* ===================== 路由与滚动高亮 ===================== */
+let curView = null, spy = null;
+function show(view, sec) {
+  if (curView !== view) {
+    STOPPERS.forEach(f => f());
+    $$('.view').forEach(v => { v.hidden = v.dataset.view !== view; });
+    curView = view;
+    $$('.toc-u').forEach(a => a.classList.toggle('on', a.dataset.u === view));
+    $$('.toc-unit').forEach(d => d.classList.toggle('open', d.dataset.u === view));
+    setupSpy(view);
+  }
+  $('#side').classList.remove('open'); $('#toc-btn').setAttribute('aria-expanded', 'false');
+  const target = sec && document.getElementById(sec);
+  if (target) target.scrollIntoView({block: 'start'}); else window.scrollTo(0, 0);
+}
+function setupSpy(view) {
+  if (spy) spy.disconnect();
+  if (!('IntersectionObserver' in window)) return;
+  const secs = $$('#view-' + view + ' section[id]');
+  spy = new IntersectionObserver(ents => {
+    ents.forEach(en => {
+      if (!en.isIntersecting) return;
+      $$('.toc-s a').forEach(a => a.classList.toggle('on', a.dataset.s === en.target.id));
+    });
+  }, {rootMargin: '0px 0px -70% 0px'});
+  secs.forEach(s => spy.observe(s));
+}
+function route() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  const m = h.match(/^(u\d+)(?:-[a-z0-9]+)?$/);
+  if (m && document.getElementById('view-' + m[1])) show(m[1], h === m[1] ? null : h);
+  else show('home', null);
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  const h = a.getAttribute('href');
+  if (h === location.hash) { e.preventDefault(); route(); }
+});
+window.addEventListener('hashchange', route);
+route();
+})();
+</script>
