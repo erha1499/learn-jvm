@@ -10,13 +10,14 @@ java -Xint -Xss1m StackDepth
 
 用到 `sun.misc.Unsafe` 的程序编译时会提示“内部专用 API”，可以忽略。运行参数写在每个文件开头的注释里，下表只列最关键的。
 
-## 单元一 字节码与栈帧
+## 单元一 字节码与执行
 
 | 文件 | 章节 | 看什么 |
 | --- | --- | --- |
 | `Calc.java` | 1.2、1.3 | `javap -c -v Calc`：字节码、版本号、常量池、`stack=2, locals=3` |
 | `IPlusPlus.java` | 1.3 | `i = i++` 之后 i 还是 0；`javap -c IPlusPlus` 看 iload、iinc、istore 的顺序 |
 | `StackDepth.java` | 1.4 | `java -Xint -Xss1m StackDepth`：栈大小、栈帧大小和递归深度的关系 |
+| `JitWarmup.java` | 1.6 | 越跑越快；对比 `-Xint`；加 `-XX:+PrintCompilation` 看分层编译 |
 
 ## 单元二 运行时数据区
 
@@ -46,6 +47,7 @@ java -Xint -Xss1m StackDepth
 | `TlabBench.java` | 4.2 | 对比 `java TlabBench` 和 `java -XX:-UseTLAB TlabBench` 的耗时 |
 | `FieldLayout.java` | 4.3 | 字段的偏移量和重排；加 `-XX:-UseCompressedClassPointers -XX:-UseCompressedOops` 再看一次 |
 | `agent/` | 4.3 | 用 `Instrumentation.getObjectSize` 量对象大小，运行方法见下 |
+| `EscapeDemo.java` | 4.5 | `java -Xmx64m EscapeDemo` 和加上 `-XX:-DoEscapeAnalysis` 时的 GC 次数 |
 
 `agent/` 需要先打成 Java Agent：
 
@@ -77,18 +79,11 @@ java -javaagent:agent.jar ObjectSize
 | --- | --- | --- |
 | `GcCompare.java` | 7.7 | 同一负载分别加 `-XX:+UseSerialGC`、`-XX:+UseParallelGC`、`-XX:+UseG1GC`、`-XX:+UseZGC`（都配 `-Xms2g -Xmx2g -Xlog:gc`），对比停顿。每次运行 10 秒 |
 
-## 单元八 执行引擎
-
-| 文件 | 章节 | 看什么 |
-| --- | --- | --- |
-| `JitWarmup.java` | 8.1、8.2 | 越跑越快；对比 `-Xint`；加 `-XX:+PrintCompilation` 看分层编译 |
-| `EscapeDemo.java` | 8.3 | `java -Xmx64m EscapeDemo` 和加上 `-XX:-DoEscapeAnalysis` 时的 GC 次数 |
-
-## 单元九 线上排查
+## 单元八 线上排查
 
 这两个程序会一直运行，用来练习工具，看完用 Ctrl+C 结束。
 
 | 文件 | 章节 | 看什么 |
 | --- | --- | --- |
-| `LeakDemo.java` | 9.1、9.3、9.5 | `java -Xmx256m -XX:NativeMemoryTracking=summary LeakDemo`，再用 `jps`、`jstat -gcutil <pid> 1000`、`jcmd <pid> GC.class_histogram`、`jcmd <pid> VM.native_memory summary` 观察。约两分钟后 OOM |
-| `CpuHog.java` | 9.4 | 隔几秒打两次 `jstack <pid>`，比较各线程的 `cpu=`，找出占满 CPU 的线程和代码行 |
+| `LeakDemo.java` | 8.3、8.5 | `java -Xmx256m -XX:NativeMemoryTracking=summary LeakDemo`，再用 `jps`、`jstat -gcutil <pid> 1000`、`jcmd <pid> GC.class_histogram`、`jcmd <pid> VM.native_memory summary` 观察。约两分钟后 OOM |
+| `CpuHog.java` | 8.4 | 隔几秒打两次 `jstack <pid>`，比较各线程的 `cpu=`，找出占满 CPU 的线程和代码行 |

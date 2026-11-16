@@ -2,7 +2,7 @@ import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 
 /**
- * 逃逸分析与标量替换（手册 8.3 节）：Point 只在方法里用，没有“逃”出去，
+ * 逃逸分析与标量替换（手册 4.5 节）：Point 只在方法里用，没有“逃”出去，
  * C2 编译后会把它拆成两个局部变量，根本不在堆上分配。
  *   java -Xmx64m EscapeDemo
  *   java -Xmx64m -XX:-DoEscapeAnalysis EscapeDemo

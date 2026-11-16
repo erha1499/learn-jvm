@@ -113,7 +113,7 @@ GC(0) - age   1:     593280 bytes,     593280 total
 - 代码里调用了 `System.gc()`。5.1 节的日志里那次 `Pause Full (System.gc())` 就是它触发的。
 - 并发收集器回收的速度跟不上分配的速度，只好停下来做一次 Full GC（7.4、7.5 节）。
 
-Full GC 要处理整个堆，停顿通常比 Young GC 长得多。7.7 节的实测里，Serial 收集器的一次 Full GC 停了 466ms。线上频繁 Full GC 的排查方法见 9.5 节。
+Full GC 要处理整个堆，停顿通常比 Young GC 长得多。7.7 节的实测里，Serial 收集器的一次 Full GC 停了 466ms。线上频繁 Full GC 的排查方法见 8.5 节。
 
 ## 面试这样说
 

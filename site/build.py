@@ -1,4 +1,4 @@
-"""把 content/ 下的手册（导读 + 九个单元 + 附录）转成交互网页，并在正文里插入演示的挂载点。
+"""把 content/ 下的手册（导读 + 各单元 + 附录）转成交互网页，并在正文里插入演示的挂载点。
 
 用法（在仓库根目录）：
     python3 site/build.py
@@ -213,7 +213,7 @@ RULES = [  # (动作, 匹配方式, 匹配文本, 演示名)
     ('after', 'p', '把 ① 挪到最后一行', 'clinit'),
     ('after', 'code', 'findBootstrapClassOrNull', 'delegation'),
     ('after', 'p', 'TLAB 就像每个人先从公共纸箱里领一叠便利贴', 'tlab'),
-    ('after', 'p', '字段没有按声明顺序摆放', 'layout'),
+    ('after', 'p', '`examples/FieldLayout.java` 还用', 'layout'),
     ('after', 'p', '回到 CycleRef：', 'reach'),
     ('after', 'p', '三种算法的取舍', 'algos'),
     ('after', 'list', '**在 Eden 出生**', 'generations'),
@@ -370,12 +370,12 @@ assert parts[0][0].startswith('## 导读'), parts[0][0]
 home, MOTTO = render_home(parts[0])
 units, all_used = [], set()
 for k, lines in enumerate(parts[1:], 1):
-    cn = CN_NUM[k - 1] if k <= len(CN_NUM) else '附录'
+    cn = '附录' if lines[0].startswith('## 附录') else CN_NUM[k - 1]
     body, toc, used, title = render_unit(lines, k, cn)
     all_used |= used
     units.append({'id': 'u%d' % k, 'cn': cn, 'title': title, 'body': body, 'toc': toc, 'motto': MOTTO.get(cn, '')})
-assert len(units) == 10, len(units)
-assert all(u['motto'] for u in units[:9]), '导读的单元顺序表缺少某个单元的一句话核心'
+assert units[-1]['cn'] == '附录', '最后一部分应当是附录'
+assert all(u['motto'] for u in units[:-1]), '导读的单元顺序表缺少某个单元的一句话核心'
 
 need = {r[3] or 'drop:' + r[2] for r in RULES}
 if all_used != need:
@@ -407,5 +407,5 @@ img_out = ROOT / 'docs' / 'img'
 if img_out.exists():
     shutil.rmtree(img_out)
 shutil.copytree(ROOT / 'content' / 'img', img_out)
-print('写出 docs/index.html（%d 个单元，演示 %d 个，小节 %d 个）和 docs/img/'
-      % (len(units), sum(1 for r in RULES if r[3]), sum(len(u['toc']) for u in units)))
+print('写出 docs/index.html（%d 个单元和附录，演示 %d 个，小节 %d 个）和 docs/img/'
+      % (len(units) - 1, sum(1 for r in RULES if r[3]), sum(len(u['toc']) for u in units)))

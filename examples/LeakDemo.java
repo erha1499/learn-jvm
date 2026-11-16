@@ -2,7 +2,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 模拟内存泄漏（手册 9.3 节）：每个“请求”都往静态 Map 里放一条记录，却从来不删。
+ * 模拟内存泄漏（手册 8.3 节）：每个“请求”都往静态 Map 里放一条记录，却从来不删。
  * 运行后用 jps 找到进程号，再用 jstat、jcmd 观察：
  *   java -Xmx256m LeakDemo
  *   jstat -gcutil <进程号> 1000

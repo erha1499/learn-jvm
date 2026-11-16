@@ -1,5 +1,5 @@
 /**
- * 同一段代码，越跑越快（手册 8.1 节）：前几批由解释器执行，热起来以后被 JIT 编译成机器码。
+ * 同一段代码，越跑越快（手册 1.6 节）：前几批由解释器执行，热起来以后被 JIT 编译成机器码。
  *   java JitWarmup
  *   java -Xint JitWarmup              只用解释器
  *   java -XX:+PrintCompilation JitWarmup | grep JitWarmup   看哪些方法在什么时候被编译
