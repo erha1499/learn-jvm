@@ -23,7 +23,7 @@ SHELL = (SITE / 'course.shell.html').read_text(encoding='utf-8')
 
 # ---------- 网页版的少量文字调整（改动前断言原文存在，正文改了措辞就会报错提醒） ----------
 REPL = [
-    ('网页版在关键位置嵌了可以一步一步执行的演示', '正文关键处嵌了标着「动手」的演示，可以一步一步执行'),
+    ('网页版在关键位置嵌了可以一步一步执行的演示', '正文关键处嵌了可以一步一步执行的演示'),
 ]
 for a, b in REPL:
     assert a in DOC, a
@@ -200,7 +200,7 @@ def deep_open_html(text):
     if not m:
         raise SystemExit('四级标题只用于“深入一层（可跳过）：标题”：' + text)
     return ('<details class="deep"><summary><span class="deep-tag">深入一层</span><span class="deep-t">%s</span>'
-            '<span class="deep-hint">第一遍可以跳过</span></summary><div class="deep-b">' % inline(m.group(1)))
+            '</summary><div class="deep-b">' % inline(m.group(1)))
 
 
 # ---------- 插入演示 ----------
@@ -292,7 +292,8 @@ def render_unit(lines, num, cn):
             else:
                 raise SystemExit('未知小节：' + text)
             cls = ' class="%s"' % mode if mode else ''
-            out.append('<section id="%s"%s><h2>%s</h2>' % (sid, cls, inline(text)))
+            extra = '<span class="qz-progress"></span>' if mode == 'quiz' else ''
+            out.append('<section id="%s"%s><h2>%s%s</h2>' % (sid, cls, inline(text), extra))
             toc.append((sid, plain(text)))
             sec_open = True
             i += 1
@@ -313,6 +314,7 @@ def render_unit(lines, num, cn):
             continue
         if mode == 'interview' and b['t'] == 'p' and b['text'].startswith('**问：'):
             q = b['text'].strip('*')
+            q = q[len('问：'):] if q.startswith('问：') else q  # 小节标题已经说明是面试题
             a = blocks[i + 1]
             assert a['t'] == 'quote'
             out.append('<details class="qa"><summary>%s</summary><div class="ans">%s</div></details>'
@@ -328,10 +330,10 @@ def render_unit(lines, num, cn):
                 if ans is None:
                     raise SystemExit('缺少自测答案：' + it['text'])
                 items.append('<li class="qz" data-qid="%s"><div class="qz-q">%s</div><div class="qz-act">'
-                             '<button type="button" class="btn sm qz-show" aria-expanded="false">看答案</button>'
+                             '<button type="button" class="btn sm qz-show" aria-expanded="false">答案</button>'
                              '<label class="qz-ok"><input type="checkbox" class="qz-cb"> 我会了</label></div>'
                              '<div class="qz-a" hidden>%s</div></li>' % (qid, inline(it['text']), ans))
-            out.append('<p class="hint"><span class="qz-progress"></span></p><ol class="quizlist">%s</ol>' % ''.join(items))
+            out.append('<ol class="quizlist">%s</ol>' % ''.join(items))
             i += 1
             continue
         out.append(render_block(b))
