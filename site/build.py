@@ -206,6 +206,7 @@ def deep_open_html(text):
 # ---------- 插入演示 ----------
 RULES = [  # (动作, 匹配方式, 匹配文本, 演示名)
     ('after', 'p', '按这个思路把 `add(3, 4)` 走一遍', 'bytecode'),
+    ('drop', 'table', '| 偏移 | 指令 | 局部变量表', None),  # 网页版由上面的演示代替这张时间线表
     ('after', 'p', '“后置 ++ 先取值再自增”', 'ipp'),
     ('after', 'p', '方法 A 调用方法 B', 'callstack'),
     ('after', 'p', '**栈里存的是对象还是指针？**', 'areas'),
@@ -315,7 +316,7 @@ def render_unit(lines, num, cn):
             a = blocks[i + 1]
             assert a['t'] == 'quote'
             out.append('<details class="qa"><summary>%s</summary><div class="ans">%s</div></details>'
-                       % (html.escape(q), inline(a['text'])))
+                       % (inline(q), inline(a['text'])))
             i += 2
             continue
         if mode == 'quiz' and b['t'] == 'list' and b['check']:
