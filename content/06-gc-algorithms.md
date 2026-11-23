@@ -41,13 +41,13 @@
 把规则串起来，一个对象从出生到“养老”是这样的：
 
 1. **在 Eden 出生**：新对象在 Eden 分配（4.2 节的 TLAB 也在 Eden 里）。
-2. **Eden 满了，触发 Minor GC**：把 Eden 和正在用的那个 Survivor（叫 from）里的活对象，复制到空着的那个 Survivor（叫 to），年龄加 1；然后清空 Eden 和 from，from 和 to 互换角色。
+2. **Eden 满了，触发 Minor GC**（只回收新生代的 GC，也叫 Young GC）：把 Eden 和正在用的那个 Survivor（叫 from）里的活对象，复制到空着的那个 Survivor（叫 to），年龄加 1；然后清空 Eden 和 from，from 和 to 互换角色。
 3. **年龄到了阈值，晋升老年代**：默认 15（`-XX:MaxTenuringThreshold`），因为对象头里的年龄只有 4 位（4.3 节）。
 4. **动态年龄判断**：如果 Survivor 里某个年龄及以下的对象加起来超过了 Survivor 的一半，那么大于等于这个年龄的对象直接晋升，不用等到 15。
 5. **Survivor 放不下，提前晋升**：活对象太多，to 区装不下，放不下的直接进老年代。
 6. **大对象直接进老年代**：很大的数组如果在 Survivor 之间来回复制，代价太高。Serial 等收集器可以用 `-XX:PretenureSizeThreshold` 设一个门槛；G1 有专门存放大对象的 Humongous 区（7.5 节）。
 
-**跟着 GC 日志看一次 Minor GC**：`examples/MinorGC.java` 用 Serial 收集器和固定的小堆，让日志最容易读。新生代 10MB（Eden 8MB + 两个 Survivor 各 1MB），先分配三个 2MB 的数组 a1、a2、a3，再分配一个 4MB 的 a4。JDK 17 加 `-Xlog:gc,gc+heap=info` 实测：
+**跟着 GC 日志看一次 Minor GC**：`examples/MinorGC.java` 用 Serial 收集器和固定的小堆，让日志最容易读。新生代 10MB（Eden 8MB + 两个 Survivor 各 1MB），先分配三个 2MB 的数组 a1、a2、a3，再分配一个 4MB 的 a4。JDK 17 加 `-Xlog:gc,gc+heap=info` 实测（`DefNew` 是 Serial 的新生代，`Tenured` 是它的老年代）：
 
 ```text
 ---- 已分配 a1、a2、a3 共 6MB，接下来分配 4MB 的 a4
@@ -86,7 +86,7 @@ GC(0) - age   1:     593280 bytes,     593280 total
 
 只回收新生代时有个麻烦：新生代对象可能只被某个老年代对象引用着。只从 GC Roots 出发、只看新生代，会把它误判成垃圾；可要是每次 Young GC 都把老年代扫一遍，分代就失去了意义。
 
-解决办法是**记忆集**，HotSpot 里的具体实现叫**卡表**（Card Table）：
+解决办法是**记忆集**：另外记下“老年代里哪些地方有指向新生代的引用”，Young GC 时只看这些地方。HotSpot 里的具体实现叫**卡表**（Card Table）：
 
 - 把老年代按 512 字节切成一张张“卡”，卡表是一个字节数组，每个字节对应一张卡。
 - 每当程序把一个引用写进某个对象的字段，JVM 在这次赋值之后自动执行一小段代码，叫**写屏障**。如果这次写入让老年代的对象引用了新生代对象，写屏障就把那张卡标成“脏”。
