@@ -22,6 +22,8 @@ JDK 自带的命令行工具就能解决大部分问题，都在 JDK 的 `bin` �
 | jstack | 打印线程栈（线程转储） | `jstack <pid>`，等价于 `jcmd <pid> Thread.print` |
 | jmap | 对象统计、堆转储 | `jmap -histo:live <pid>`、`jmap -dump:live,format=b,file=heap.hprof <pid>` |
 
+两种“转储”别混：**线程转储**是某一刻所有线程的状态和调用栈，文件很小，打的时候几乎不影响进程，用来查卡死、死锁、CPU 高；**堆转储**是堆里所有对象的快照，文件和堆的使用量差不多大，转储期间进程要停下来，用来查内存问题。
+
 jcmd 最常用的几个命令：`GC.heap_info`（堆的概况）、`GC.class_histogram`（每个类有多少实例、占多少内存）、`GC.heap_dump <文件>`（堆转储）、`VM.flags`（实际生效的参数）、`VM.native_memory summary`（本地内存统计，需要启动时加 `-XX:NativeMemoryTracking=summary`）。
 
 图形化工具里最常用的是 **MAT**（Eclipse Memory Analyzer），用来分析堆转储文件；阿里开源的 **Arthas** 可以直接 attach 到线上进程，查看最忙的线程、追踪方法耗时。
@@ -43,7 +45,7 @@ GC 日志是判断“是不是 GC 的问题”最直接的证据，生产环境�
 - JDK 9 及以后：`-Xlog:gc*:file=gc.log:time,uptime,level,tags:filecount=5,filesize=20m`（按大小滚动，保留 5 个文件）。
 - JDK 8：`-XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:gc.log`。
 
-拿单元七 G1 的一行日志来读：
+拿 7.7 节用 G1 跑 GcCompare 时的第一行日志来读：
 
 ```text
 [0.050s][info][gc] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 110M->111M(2048M) 16.331ms
@@ -132,7 +134,6 @@ JDK 11 起，jstack 还会在每个线程后面打印它累计用了多少 CPU �
 - 死循环，或者正则表达式的回溯爆炸。
 - **频繁 GC**：GC 线程占满 CPU。`top -H` 里看到名为 `GC Thread#0` 这类的线程最忙时，转去看 jstat 和 GC 日志。
 - 大量计算、序列化，或者锁竞争激烈时线程反复自旋。
-
 
 ## 8.5 频繁 GC 与堆外内存
 
