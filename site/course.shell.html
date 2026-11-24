@@ -89,6 +89,8 @@ code,.mono{font-family:var(--f-mono)}
   .side-foot{display:none}
   .side.open .side-foot{display:flex}
   .main{padding-top:20px}
+  .main .home-hero h1{position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap}
+  .main .home-hero .unitmap{margin-top:0}
 }
 
 /* ---------- 正文 ---------- */
@@ -350,7 +352,8 @@ details.deep[open] > summary{border-bottom:1px dashed var(--line-2)}
 .rc.E{--rc:var(--t1)} .rc.S{--rc:var(--t3)} .rc.O{--rc:var(--t4)} .rc.H{--rc:var(--t2)}
 .rc.F{background:var(--surface); border-color:var(--line); color:var(--ink-3)}
 .rc.sel{outline:2.5px dashed var(--bad); outline-offset:1px}
-.legend i.rc{display:inline-block; min-height:0; width:12px; height:12px; border-width:1.5px}
+.legend i.rc{display:inline-block; min-height:0; width:12px; height:12px; border:1.5px solid var(--rc, var(--line-2)); background:color-mix(in srgb, var(--rc, var(--line)) 30%, var(--surface))}
+.legend i.rc.F{border-color:var(--line-2); background:var(--surface)}
 
 @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important; scroll-behavior:auto !important} }
 </style>
